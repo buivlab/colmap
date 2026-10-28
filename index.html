@@ -474,20 +474,14 @@
 
         function seedInitialFunding() {
             const initialGrants = [
-                                { name: "VinFuture Prize & Grant", amount: "$3M USD Grand Prize / $500k Special Prizes", region: "Global / Vietnam", description: "Global science and technology prize honoring breakthrough research and technological innovations that create positive change in humanity's lives, with strong relevance for Vietnam and emerging economies." },
-{ name: "Aus4Innovation (Vietnam & Australia)", amount: "$250k – $1M AUD", region: "Vietnam", description: "CSIRO & DFAT-led grants targeting AI, high-tech agriculture, and technology transfer in Vietnam." },
+                { name: "VinFuture Prize & Grant", amount: "$3M USD Grand Prize / $500k Special Prizes", region: "Global / Vietnam", description: "Global science and technology prize honoring breakthrough research and technological innovations that create positive change in humanity's lives, with strong relevance for Vietnam and emerging economies." },
+                { name: "Aus4Innovation (Vietnam & Australia)", amount: "$250k – $1M AUD", region: "Vietnam", description: "CSIRO & DFAT-led grants targeting AI, high-tech agriculture, and technology transfer in Vietnam." },
                 { name: "KONEKSI (Indonesia & Australia)", amount: "$100k – $300k AUD", region: "Indonesia", description: "Australia's flagship collaborative research grant mechanism with BRIN and Indonesian universities focused on climate change and digital transformation." },
                 { name: "ASEAN-Australia Centre Grants Program (DFAT)", amount: "$50k – $200k/yr (up to $400k)", region: "SE Asia / ASEAN", description: "Multi-year funding aligned with Invested: Australia's Southeast Asia Economic Strategy to 2040, focusing on economic engagement, digital transformation, and higher education capabilities." },
                 { name: "DFAT Partnerships for a Healthy Region", amount: "$100k – $500k AUD", region: "SE Asia & Pacific", description: "Focused on climate and health impacts, vector surveillance, health data, and pandemic preparedness across Southeast Asia and the Pacific." },
                 { name: "NHMRC e-ASIA Joint Research Program (e-ASIA JRP)", amount: "Varies (Multilateral)", region: "SE Asia / ASEAN", description: "Joint multilateral health, environmental, and disaster risk reduction grant rounds connecting Australian researchers directly with ASEAN partners." },
                 { name: "PNGAus Partnership Grants", amount: "Varies by scope", region: "Papua New Guinea", description: "Dedicated PNG mechanisms covering off-grid energy, water security, disaster resilience, and STEM capacity building." },
                 { name: "AISRF / Indo-Pacific Bilateral Calls", amount: "Varies", region: "Indo-Pacific / Regional", description: "Joint research projects in clean energy, AI, quantum, and ocean science." }
-            ];
-            initialGrants.forEach(g => fundingRef.add(g));
-        },
-                { name: "KONEKSI Collaborative Grant", amount: "$100k – $300k AUD", region: "Indonesia", description: "Flagship research partnership with BRIN focusing on climate resilience and digital transformation." },
-                { name: "ASEAN-Australia Centre Grants", amount: "$50k – $200k/yr", region: "SE Asia / ASEAN", description: "Multi-year DFAT grants supporting education, digital capabilities, and economic engagement." },
-                { name: "Partnerships for a Healthy Region", amount: "$100k – $500k AUD", region: "SE Asia & Pacific", description: "Addressing climate health impacts, vector surveillance, health data, and pandemic preparedness." }
             ];
             initialGrants.forEach(g => fundingRef.add(g));
         }
