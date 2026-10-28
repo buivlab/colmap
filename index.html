@@ -54,7 +54,6 @@
         }
         .ol-popup-closer:hover { color: #334155; }
     </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 </head>
 <body class="bg-slate-900 font-sans antialiased text-slate-800 overflow-hidden">
     <!-- Top Header -->
@@ -108,21 +107,25 @@
         <!-- Sidebar / Control Panel -->
         <div id="sidebar" class="w-full md:w-[500px] bg-white border-l border-slate-200 flex flex-col h-full z-20 shadow-2xl transition-all duration-300">
             <!-- Navigation Tabs -->
-            <div class="flex border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
-                <button id="tab-add" onclick="switchTab('add')" class="flex-1 py-3 border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-1.5 transition">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <div class="flex border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-600 overflow-x-auto">
+                <button id="tab-add" onclick="switchTab('add')" class="flex-1 py-3 px-2 border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-1 transition shrink-0">
+                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
                     <span id="tab-add-label">Add Project</span>
                 </button>
-                <button id="tab-list" onclick="switchTab('list')" class="flex-1 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1.5 transition">
-                    <i data-lucide="layers" class="w-4 h-4"></i>
+                <button id="tab-list" onclick="switchTab('list')" class="flex-1 py-3 px-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1 transition shrink-0">
+                    <i data-lucide="layers" class="w-3.5 h-3.5"></i>
                     <span>Projects (<span id="count-badge">0</span>)</span>
                 </button>
-                <button id="tab-stats" onclick="switchTab('stats')" class="flex-1 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1.5 transition">
-                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                <button id="tab-team" onclick="switchTab('team')" class="flex-1 py-3 px-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1 transition shrink-0">
+                    <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                    <span>Team</span>
+                </button>
+                <button id="tab-stats" onclick="switchTab('stats')" class="flex-1 py-3 px-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1 transition shrink-0">
+                    <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
                     <span>Stats</span>
                 </button>
-                <button id="tab-funding" onclick="switchTab('funding')" class="flex-1 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1.5 transition">
-                    <i data-lucide="banknote" class="w-4 h-4"></i>
+                <button id="tab-funding" onclick="switchTab('funding')" class="flex-1 py-3 px-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1 transition shrink-0">
+                    <i data-lucide="banknote" class="w-3.5 h-3.5"></i>
                     <span>Grants</span>
                 </button>
             </div>
@@ -157,19 +160,36 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Target Country *</label>
-                            <input type="text" id="form-country" required placeholder="e.g. Vietnam, Fiji, Indonesia" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <label class="block font-semibold text-slate-700 mb-1">Project State *</label>
+                            <select id="form-status" required class="w-full border border-slate-300 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                <option value="Running">🟢 Running / Active</option>
+                                <option value="Finished">🔵 Finished / Completed</option>
+                                <option value="Proposal">🟠 Proposal / Planning</option>
+                            </select>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Target Country *</label>
+                            <input type="text" id="form-country" required placeholder="e.g. Vietnam, Fiji, Indonesia" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+                        <div>
                             <label class="block font-semibold text-slate-700 mb-1">Partner Institution *</label>
                             <input type="text" id="form-partner" required placeholder="e.g. Can Tho University" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                         </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Lead Researcher / Facilitator</label>
+                            <label class="block font-semibold text-slate-700 mb-1">Lead Researcher</label>
                             <input type="text" id="form-lead" placeholder="e.g. Prof. Quang Bui" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Funding Mechanism</label>
+                            <select id="form-funding" class="w-full border border-slate-300 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                <option value="">-- Select or type custom --</option>
+                            </select>
                         </div>
                     </div>
 
@@ -182,13 +202,6 @@
                             <label class="block font-semibold text-slate-700 mb-1">Longitude *</label>
                             <input type="number" step="any" id="form-lng" required placeholder="e.g. 105.770" class="w-full border border-slate-300 rounded-lg p-2.5 font-mono text-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                         </div>
-                    </div>
-
-                    <div>
-                        <label class="block font-semibold text-slate-700 mb-1">Funding / Partner Mechanism</label>
-                        <select id="form-funding" class="w-full border border-slate-300 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                            <option value="">-- Select or type custom funding --</option>
-                        </select>
                     </div>
 
                     <div>
@@ -211,7 +224,7 @@
                         <input type="text" id="filter-search" oninput="applyFilters()" placeholder="Search title, institution, lead..." class="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="grid grid-cols-3 gap-2 text-xs">
                         <select id="filter-discipline" onchange="applyFilters()" class="border border-slate-300 rounded-lg p-2 bg-white">
                             <option value="ALL">All Disciplines</option>
                             <option value="Science">Science</option>
@@ -219,6 +232,12 @@
                             <option value="IT">IT & AI</option>
                             <option value="Cross-Disciplinary">Cross-Disciplinary</option>
                             <option value="Teaching & Mobility">Teaching & Mobility</option>
+                        </select>
+                        <select id="filter-status" onchange="applyFilters()" class="border border-slate-300 rounded-lg p-2 bg-white">
+                            <option value="ALL">All States</option>
+                            <option value="Running">Running</option>
+                            <option value="Finished">Finished</option>
+                            <option value="Proposal">Proposal</option>
                         </select>
                         <select id="filter-country" onchange="applyFilters()" class="border border-slate-300 rounded-lg p-2 bg-white">
                             <option value="ALL">All Countries</option>
@@ -228,22 +247,85 @@
 
                 <div id="project-cards-container" class="space-y-2.5 overflow-y-auto flex-1 custom-scrollbar"></div>
 
-                <!-- Project QR Code Share Box -->
-                <div class="mt-4 p-4 border border-dashed border-indigo-200 bg-indigo-50/50 rounded-xl text-center space-y-2">
-                    <div class="flex items-center justify-center space-x-1.5 text-xs font-semibold text-indigo-900">
-                        <i data-lucide="qr-code" class="w-4 h-4 text-indigo-600"></i>
-                        <span>Scan & Share Map View</span>
+                <!-- Custom User QR Code Share Box -->
+                <div class="mt-4 p-4 border border-dashed border-indigo-200 bg-indigo-50/50 rounded-xl text-center space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-1.5 text-xs font-semibold text-indigo-900">
+                            <i data-lucide="qr-code" class="w-4 h-4 text-indigo-600"></i>
+                            <span>Custom QR Code Share</span>
+                        </div>
+                        <label class="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer bg-white px-2 py-1 border border-indigo-200 rounded-lg shadow-sm transition">
+                            <i data-lucide="upload" class="w-3 h-3 inline mr-0.5"></i> Change Image
+                            <input type="file" id="qr-upload-input" accept="image/*" class="hidden" onchange="uploadCustomQRCode(event)">
+                        </label>
                     </div>
-                    <p class="text-[11px] text-slate-500">Scan this QR code to quickly open this research collaboration map on mobile devices.</p>
-                    <div class="flex justify-center py-1">
-                        <canvas id="qr-code-canvas" class="border border-white rounded-lg shadow-sm bg-white p-1"></canvas>
+                    <p class="text-[11px] text-slate-500">Scan this QR code to quickly access this collaboration map on mobile.</p>
+                    <div class="flex justify-center py-1 relative">
+                        <img id="custom-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https://colmap-a6915.firebaseapp.com" alt="Custom App QR Code" class="w-32 h-32 border border-white rounded-lg shadow-md bg-white p-1 object-contain">
                     </div>
                     <p class="text-[10px] text-indigo-600 font-mono font-medium">colmap-a6915.firebaseapp.com</p>
                 </div>
-
             </div>
 
-            <!-- TAB 3: STATS DASHBOARD -->
+            <!-- TAB 3: TEAM / RESEARCHERS DIRECTORY -->
+            <div id="content-team" class="flex-1 overflow-y-auto p-5 custom-scrollbar hidden space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
+                            <i data-lucide="users" class="w-4 h-4 text-indigo-600"></i>
+                            <span>Project Members & Researchers</span>
+                        </h3>
+                        <p class="text-[11px] text-slate-500">Directory of collaborating researchers and contacts.</p>
+                    </div>
+                    <button onclick="toggleMemberForm()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1">
+                        <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                        <span>Add Member</span>
+                    </button>
+                </div>
+
+                <!-- Add/Edit Member Form -->
+                <form id="member-form" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 text-xs">
+                    <input type="hidden" id="member-editing-id" value="">
+                    <h4 id="member-form-title" class="font-bold text-slate-800">Add New Team Member</h4>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Full Name *</label>
+                            <input type="text" id="member-name" required placeholder="e.g. Prof. Quang Bui" class="w-full border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Institution *</label>
+                            <input type="text" id="member-institution" required placeholder="e.g. Can Tho University" class="w-full border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Email Address</label>
+                            <input type="email" id="member-email" placeholder="e.g. quang.bui@ctu.edu.vn" class="w-full border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Photo / Avatar URL</label>
+                            <input type="url" id="member-photo" placeholder="https://images.unsplash.com/..." class="w-full border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Research Focus / Bio</label>
+                        <textarea id="member-bio" rows="2" placeholder="e.g. Drones, AI, IoT sensor networks for Mekong Delta..." class="w-full border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+
+                    <div class="flex space-x-2 pt-1">
+                        <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg transition">Save Profile</button>
+                        <button type="button" onclick="toggleMemberForm()" class="px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 rounded-lg transition">Cancel</button>
+                    </div>
+                </form>
+
+                <!-- Members Directory Cards Container -->
+                <div id="team-cards-container" class="space-y-3"></div>
+            </div>
+
+            <!-- TAB 4: STATS DASHBOARD -->
             <div id="content-stats" class="flex-1 overflow-y-auto p-5 custom-scrollbar hidden space-y-5">
                 <h3 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
                     <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-600"></i>
@@ -296,7 +378,7 @@
                 </div>
             </div>
 
-            <!-- TAB 4: FUNDING SOURCES MANAGER -->
+            <!-- TAB 5: FUNDING SOURCES MANAGER -->
             <div id="content-funding" class="flex-1 overflow-y-auto p-5 custom-scrollbar hidden space-y-5">
                 <div class="flex items-center justify-between">
                     <h3 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
@@ -363,11 +445,13 @@
         const db = firebase.firestore();
         const collabsRef = db.collection("collaborations");
         const fundingRef = db.collection("funding_sources");
+        const membersRef = db.collection("team_members");
 
         // --- 2. OPENLAYERS MAP SETUP ---
         let map, vectorSource, vectorLayer, overlay;
         let allCollaborations = [];
         let allFundingSources = [];
+        let allTeamMembers = [];
 
         const disciplineColors = {
             'Science': { bg: '#10B981', label: 'bg-emerald-100 text-emerald-800' },
@@ -377,25 +461,18 @@
             'Teaching & Mobility': { bg: '#14B8A6', label: 'bg-teal-100 text-teal-800' }
         };
 
-        document.addEventListener('DOMContentLoaded', () => {
+        const statusBadges = {
+            'Running': { label: 'bg-emerald-500 text-white', border: '#10B981', text: 'Running' },
+            'Finished': { label: 'bg-blue-500 text-white', border: '#3B82F6', text: 'Finished' },
+            'Proposal': { label: 'bg-amber-500 text-white', border: '#F59E0B', text: 'Proposal' }
+        };
 
-        // --- 9. QR CODE GENERATOR ---
         document.addEventListener('DOMContentLoaded', () => {
-            try {
-                const qr = new QRious({
-                    element: document.getElementById('qr-code-canvas'),
-                    value: window.location.href.startsWith('http') ? window.location.href : 'https://colmap-a6915.firebaseapp.com',
-                    size: 112
-                });
-            } catch (e) {
-                console.warn("QRious generation failed:", e);
-            }
-        });
-
             lucide.createIcons();
             initOpenLayersMap();
             listenToFirestore();
             listenToFundingSources();
+            listenToTeamMembers();
         });
 
         function initOpenLayersMap() {
@@ -430,9 +507,14 @@
                     const c = feature.get('collabData');
                     const popupContent = document.getElementById('popup-content');
                     const badgeStyle = (disciplineColors[c.discipline] || { label: 'bg-slate-100 text-slate-800' }).label;
+                    const statusVal = c.status || 'Running';
+                    const stBadge = (statusBadges[statusVal] || statusBadges['Running']).label;
 
                     popupContent.innerHTML = `
-                        <span class="inline-block px-2 py-0.5 text-[10px] font-bold rounded-md ${badgeStyle} uppercase mb-1">${c.discipline}</span>
+                        <div class="flex items-center space-x-1.5 mb-1">
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-md ${badgeStyle} uppercase">${c.discipline}</span>
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-md ${stBadge} uppercase">${statusVal}</span>
+                        </div>
                         <h4 class="font-bold text-sm text-slate-900 leading-snug mb-1">${c.title}</h4>
                         <p class="text-xs text-slate-600 mb-1"><strong>Partner:</strong> ${c.partner} (${c.country})</p>
                         ${c.lead ? `<p class="text-xs text-slate-500 mb-1"><strong>Lead:</strong> ${c.lead}</p>` : ''}
@@ -492,11 +574,23 @@
             });
         }
 
+        function listenToTeamMembers() {
+            membersRef.onSnapshot((snapshot) => {
+                if (snapshot.empty) {
+                    seedInitialMembers();
+                } else {
+                    allTeamMembers = [];
+                    snapshot.forEach(doc => allTeamMembers.push({ id: doc.id, ...doc.data() }));
+                    renderTeamMembers();
+                }
+            });
+        }
+
         function seedInitialProjects() {
             const initial = [
-                { title: "Drone-Based Flood & Environmental Monitoring", discipline: "Cross-Disciplinary", country: "Vietnam", partner: "Can Tho University", lead: "Prof. Quang Bui", lat: 10.030, lng: 105.770, funding: "Aus4Innovation Bilateral Grant", description: "Integrating Autonomous Drones, hydrological models, and IoT sensor networks for Mekong Delta resilience." },
-                { title: "Pacific Smart Microgrid & Off-Grid Energy", discipline: "Engineering", country: "Fiji", partner: "University of the South Pacific (USP)", lead: "Dr. K. Sharma", lat: -18.148, lng: 178.444, funding: "PNGAus / Pacific Partnership", description: "Engineering robust microgrid systems paired with IoT sensor diagnostics for remote island communities." },
-                { title: "Coral Reef Health AI & Coral Bleaching Models", discipline: "Science", country: "Indonesia", partner: "BRIN / IPB University", lead: "Dr. Maya Wijaya", lat: -6.597, lng: 106.806, funding: "KONEKSI Collaborative Grant", description: "Combining marine science field sampling with deep learning computer vision to quantify reef restoration." }
+                { title: "Drone-Based Flood & Environmental Monitoring", discipline: "Cross-Disciplinary", status: "Running", country: "Vietnam", partner: "Can Tho University", lead: "Prof. Quang Bui", lat: 10.030, lng: 105.770, funding: "Aus4Innovation Bilateral Grant", description: "Integrating Autonomous Drones, hydrological models, and IoT sensor networks for Mekong Delta resilience." },
+                { title: "Pacific Smart Microgrid & Off-Grid Energy", discipline: "Engineering", status: "Running", country: "Fiji", partner: "University of the South Pacific (USP)", lead: "Dr. K. Sharma", lat: -18.148, lng: 178.444, funding: "PNGAus / Pacific Partnership", description: "Engineering robust microgrid systems paired with IoT sensor diagnostics for remote island communities." },
+                { title: "Coral Reef Health AI & Coral Bleaching Models", discipline: "Science", status: "Proposal", country: "Indonesia", partner: "BRIN / IPB University", lead: "Dr. Maya Wijaya", lat: -6.597, lng: 106.806, funding: "KONEKSI Collaborative Grant", description: "Combining marine science field sampling with deep learning computer vision to quantify reef restoration." }
             ];
             initial.forEach(p => collabsRef.add(p));
         }
@@ -506,13 +600,18 @@
                 { name: "VinFuture Prize & Grant", amount: "$3M USD Grand Prize / $500k Special Prizes", region: "Global / Vietnam", description: "Global science and technology prize honoring breakthrough research and technological innovations that create positive change in humanity's lives, with strong relevance for Vietnam and emerging economies." },
                 { name: "Aus4Innovation (Vietnam & Australia)", amount: "$250k – $1M AUD", region: "Vietnam", description: "CSIRO & DFAT-led grants targeting AI, high-tech agriculture, and technology transfer in Vietnam." },
                 { name: "KONEKSI (Indonesia & Australia)", amount: "$100k – $300k AUD", region: "Indonesia", description: "Australia's flagship collaborative research grant mechanism with BRIN and Indonesian universities focused on climate change and digital transformation." },
-                { name: "ASEAN-Australia Centre Grants Program (DFAT)", amount: "$50k – $200k/yr (up to $400k)", region: "SE Asia / ASEAN", description: "Multi-year funding aligned with Invested: Australia's Southeast Asia Economic Strategy to 2040, focusing on economic engagement, digital transformation, and higher education capabilities." },
-                { name: "DFAT Partnerships for a Healthy Region", amount: "$100k – $500k AUD", region: "SE Asia & Pacific", description: "Focused on climate and health impacts, vector surveillance, health data, and pandemic preparedness across Southeast Asia and the Pacific." },
-                { name: "NHMRC e-ASIA Joint Research Program (e-ASIA JRP)", amount: "Varies (Multilateral)", region: "SE Asia / ASEAN", description: "Joint multilateral health, environmental, and disaster risk reduction grant rounds connecting Australian researchers directly with ASEAN partners." },
-                { name: "PNGAus Partnership Grants", amount: "Varies by scope", region: "Papua New Guinea", description: "Dedicated PNG mechanisms covering off-grid energy, water security, disaster resilience, and STEM capacity building." },
-                { name: "AISRF / Indo-Pacific Bilateral Calls", amount: "Varies", region: "Indo-Pacific / Regional", description: "Joint research projects in clean energy, AI, quantum, and ocean science." }
+                { name: "ASEAN-Australia Centre Grants Program (DFAT)", amount: "$50k – $200k/yr (up to $400k)", region: "SE Asia / ASEAN", description: "Multi-year funding aligned with Invested: Australia's Southeast Asia Economic Strategy to 2040, focusing on economic engagement, digital transformation, and higher education capabilities." }
             ];
             initialGrants.forEach(g => fundingRef.add(g));
+        }
+
+        function seedInitialMembers() {
+            const initialMembers = [
+                { name: "Prof. Quang Bui", institution: "Can Tho University / Partner", email: "quang.bui@ctu.edu.vn", bio: "Director of Geospatial & Drone AI Research Lab in the Mekong Delta.", photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" },
+                { name: "Dr. Maya Wijaya", institution: "BRIN / IPB University", email: "maya.wijaya@brin.go.id", bio: "Marine ecologist specializing in automated coral reef bleaching detection models.", photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150" },
+                { name: "Dr. K. Sharma", institution: "University of the South Pacific", email: "k.sharma@usp.ac.fj", bio: "Renewable energy systems engineer focused on Pacific island microgrids.", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150" }
+            ];
+            initialMembers.forEach(m => membersRef.add(m));
         }
 
         // --- 4. RENDER UI, STATS & FILTERS ---
@@ -537,13 +636,13 @@
             select.value = currentVal;
         }
 
-        function createFeatureStyle(discipline) {
+        function createFeatureStyle(discipline, status) {
             const hexColor = (disciplineColors[discipline] || { bg: '#6366F1' }).bg;
             return new ol.style.Style({
                 image: new ol.style.Circle({
-                    radius: 9,
+                    radius: status === 'Proposal' ? 7 : 10,
                     fill: new ol.style.Fill({ color: hexColor }),
-                    stroke: new ol.style.Stroke({ color: '#ffffff', width: 3 })
+                    stroke: new ol.style.Stroke({ color: status === 'Running' ? '#10B981' : (status === 'Finished' ? '#3B82F6' : '#F59E0B'), width: 3.5 })
                 })
             });
         }
@@ -551,6 +650,7 @@
         function applyFilters() {
             const search = document.getElementById('filter-search').value.toLowerCase();
             const discFilter = document.getElementById('filter-discipline').value;
+            const statusFilter = document.getElementById('filter-status').value;
             const countryFilter = document.getElementById('filter-country').value;
 
             const filtered = allCollaborations.filter(c => {
@@ -559,8 +659,9 @@
                                       (c.lead || '').toLowerCase().includes(search) ||
                                       (c.description || '').toLowerCase().includes(search);
                 const matchesDisc = discFilter === 'ALL' || c.discipline === discFilter;
+                const matchesStatus = statusFilter === 'ALL' || (c.status || 'Running') === statusFilter;
                 const matchesCountry = countryFilter === 'ALL' || c.country === countryFilter;
-                return matchesSearch && matchesDisc && matchesCountry;
+                return matchesSearch && matchesDisc && matchesStatus && matchesCountry;
             });
 
             renderOpenLayersFeatures(filtered);
@@ -575,7 +676,7 @@
                     geometry: new ol.geom.Point(ol.proj.fromLonLat([c.lng, c.lat])),
                     collabData: c
                 });
-                feature.setStyle(createFeatureStyle(c.discipline));
+                feature.setStyle(createFeatureStyle(c.discipline, c.status));
                 vectorSource.addFeature(feature);
             });
         }
@@ -591,12 +692,18 @@
 
             items.forEach(c => {
                 const badgeStyle = (disciplineColors[c.discipline] || { label: 'bg-slate-100 text-slate-800' }).label;
+                const statusVal = c.status || 'Running';
+                const stBadge = (statusBadges[statusVal] || statusBadges['Running']).label;
+
                 const card = document.createElement('div');
                 card.className = "p-3 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md transition space-y-1.5";
 
                 card.innerHTML = `
                     <div class="flex items-start justify-between">
-                        <span class="px-2 py-0.5 text-[10px] font-bold rounded ${badgeStyle} uppercase">${c.discipline}</span>
+                        <div class="flex space-x-1.5">
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded ${badgeStyle} uppercase">${c.discipline}</span>
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded ${stBadge} uppercase">${statusVal}</span>
+                        </div>
                         <span class="text-[11px] font-semibold text-slate-500">${c.country}</span>
                     </div>
                     <h4 class="font-bold text-xs text-slate-800 leading-snug cursor-pointer hover:text-indigo-600" onclick="flyToRegion(${c.lng}, ${c.lat}, 8)">${c.title}</h4>
@@ -613,7 +720,95 @@
             lucide.createIcons();
         }
 
-        // --- 5. STATS DASHBOARD RENDERER ---
+        // --- 5. TEAM MEMBERS MANAGEMENT ---
+        function renderTeamMembers() {
+            const container = document.getElementById('team-cards-container');
+            container.innerHTML = '';
+
+            if (allTeamMembers.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs">No team members added yet.</div>`;
+                return;
+            }
+
+            allTeamMembers.forEach(m => {
+                const card = document.createElement('div');
+                card.className = "p-3.5 rounded-xl border border-slate-200 bg-white hover:shadow-sm transition flex items-start space-x-3 text-xs";
+                
+                const avatar = m.photo ? `<img src="${m.photo}" alt="${m.name}" class="w-12 h-12 rounded-full object-cover border border-slate-200 shrink-0">` : 
+                                         `<div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center shrink-0 text-sm">${m.name.charAt(0)}</div>`;
+
+                card.innerHTML = `
+                    ${avatar}
+                    <div class="flex-1 space-y-1">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-xs">${m.name}</h4>
+                                <p class="text-[11px] text-indigo-600 font-medium">${m.institution}</p>
+                            </div>
+                            <div class="flex space-x-1.5">
+                                <button onclick="editMember('${m.id}')" class="text-amber-600 hover:text-amber-800 text-[11px] font-semibold">Edit</button>
+                                <button onclick="deleteMember('${m.id}')" class="text-rose-600 hover:text-rose-800 text-[11px] font-semibold">Delete</button>
+                            </div>
+                        </div>
+                        ${m.email ? `<p class="text-[11px] text-slate-500 flex items-center"><i data-lucide="mail" class="w-3 h-3 mr-1 text-slate-400"></i><a href="mailto:${m.email}" class="hover:underline">${m.email}</a></p>` : ''}
+                        ${m.bio ? `<p class="text-slate-600 leading-relaxed text-[11px] pt-1 border-t border-slate-100">${m.bio}</p>` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function toggleMemberForm(memberObj = null) {
+            const form = document.getElementById('member-form');
+            form.classList.toggle('hidden');
+
+            if (memberObj) {
+                document.getElementById('member-editing-id').value = memberObj.id;
+                document.getElementById('member-name').value = memberObj.name || '';
+                document.getElementById('member-institution').value = memberObj.institution || '';
+                document.getElementById('member-email').value = memberObj.email || '';
+                document.getElementById('member-photo').value = memberObj.photo || '';
+                document.getElementById('member-bio').value = memberObj.bio || '';
+                document.getElementById('member-form-title').textContent = "Edit Team Member Profile";
+            } else {
+                document.getElementById('member-form').reset();
+                document.getElementById('member-editing-id').value = '';
+                document.getElementById('member-form-title').textContent = "Add New Team Member";
+            }
+        }
+
+        document.getElementById('member-form').onsubmit = function(e) {
+            e.preventDefault();
+            const editId = document.getElementById('member-editing-id').value;
+            const data = {
+                name: document.getElementById('member-name').value,
+                institution: document.getElementById('member-institution').value,
+                email: document.getElementById('member-email').value,
+                photo: document.getElementById('member-photo').value,
+                bio: document.getElementById('member-bio').value
+            };
+
+            if (editId) {
+                membersRef.doc(editId).update(data);
+            } else {
+                membersRef.add(data);
+            }
+            toggleMemberForm();
+        };
+
+        function editMember(id) {
+            const m = allTeamMembers.find(item => item.id === id);
+            if (m) toggleMemberForm(m);
+        }
+
+        function deleteMember(id) {
+            if (confirm("Are you sure you want to remove this member?")) {
+                membersRef.doc(id).delete();
+            }
+        }
+
+        // --- 6. STATS DASHBOARD RENDERER ---
         function renderStatsDashboard() {
             const totalProjects = allCollaborations.length;
             const uniqueCountries = new Set(allCollaborations.map(c => c.country).filter(Boolean)).size;
@@ -662,7 +857,7 @@
             });
         }
 
-        // --- 6. FUNDING SOURCES MANAGEMENT ---
+        // --- 7. FUNDING SOURCES MANAGEMENT ---
         function renderFundingSources() {
             const container = document.getElementById('funding-list-container');
             container.innerHTML = '';
@@ -689,7 +884,7 @@
         function updateFundingDropdown() {
             const select = document.getElementById('form-funding');
             const currentVal = select.value;
-            select.innerHTML = '<option value="">-- Select or type custom funding --</option>';
+            select.innerHTML = '<option value="">-- Select or type custom --</option>';
             
             allFundingSources.forEach(f => {
                 const opt = document.createElement('option');
@@ -747,7 +942,7 @@
             }
         }
 
-        // --- 7. EDIT & DELETE PROJECT FUNCTIONS ---
+        // --- 8. EDIT & DELETE PROJECT FUNCTIONS ---
         function editProject(id) {
             const p = allCollaborations.find(item => item.id === id);
             if (!p) return;
@@ -755,6 +950,7 @@
             document.getElementById('form-editing-id').value = p.id;
             document.getElementById('form-title').value = p.title || '';
             document.getElementById('form-discipline').value = p.discipline || 'Science';
+            document.getElementById('form-status').value = p.status || 'Running';
             document.getElementById('form-country').value = p.country || '';
             document.getElementById('form-partner').value = p.partner || '';
             document.getElementById('form-lead').value = p.lead || '';
@@ -796,6 +992,7 @@
             const payload = {
                 title: document.getElementById('form-title').value,
                 discipline: document.getElementById('form-discipline').value,
+                status: document.getElementById('form-status').value,
                 country: document.getElementById('form-country').value,
                 partner: document.getElementById('form-partner').value,
                 lead: document.getElementById('form-lead').value,
@@ -820,16 +1017,16 @@
             }
         };
 
-        // --- 8. NAVIGATION & EXPORT ---
+        // --- 9. NAVIGATION & EXPORT ---
         function switchTab(tab) {
-            ['add', 'list', 'stats', 'funding'].forEach(t => {
+            ['add', 'list', 'team', 'stats', 'funding'].forEach(t => {
                 const btn = document.getElementById(`tab-${t}`);
                 const content = document.getElementById(`content-${t}`);
                 if (t === tab) {
-                    btn.className = "flex-1 py-3 border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-1.5 transition font-bold";
+                    btn.className = "flex-1 py-3 px-2 border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-1 transition font-bold shrink-0";
                     content.classList.remove('hidden');
                 } else {
-                    btn.className = "flex-1 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1.5 transition font-medium";
+                    btn.className = "flex-1 py-3 px-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1 transition font-medium shrink-0";
                     content.classList.add('hidden');
                 }
             });
@@ -838,6 +1035,7 @@
         document.getElementById('export-btn').onclick = function() {
             const exportData = {
                 collaborations: allCollaborations,
+                teamMembers: allTeamMembers,
                 fundingSources: allFundingSources
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
@@ -848,6 +1046,30 @@
             downloadAnchor.click();
             downloadAnchor.remove();
         };
+    
+        // --- 10. CUSTOM USER QR CODE UPLOADER ---
+        function uploadCustomQRCode(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64Img = e.target.result;
+                    document.getElementById('custom-qr-img').src = base64Img;
+                    localStorage.setItem('custom_user_qrcode', base64Img);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Load saved custom QR code on DOM ready if exists
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedQr = localStorage.getItem('custom_user_qrcode');
+            if (savedQr) {
+                const imgEl = document.getElementById('custom-qr-img');
+                if (imgEl) imgEl.src = savedQr;
+            }
+        });
+
     </script>
 </body>
 </html>
