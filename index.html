@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SE Asia & Pacific Research Collaboration Map</title>
-    <!-- Tailwind CSS -->
+    <title>SE Asia & Pacific Research Collaboration Map (Zero API Key)</title>
+    <!-- Tailwind CSS (CDN - Free/No Key) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Leaflet CSS & JS -->
+    <!-- Leaflet CSS & JS (OpenSource - Free/No Key) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Lucide Icons -->
+    <!-- Lucide Icons (Free/No Key) -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <!-- PeerJS for direct Browser-to-Peer real-time multi-user syncing (Free/No Key required) -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         #map { height: calc(100vh - 4rem); z-index: 10; }
         .custom-marker { transition: transform 0.2s ease; }
@@ -35,21 +33,27 @@
             </div>
             <div>
                 <h1 class="font-bold text-lg leading-tight text-slate-100">SE Asia & Pacific Collaboration Hub</h1>
-                <p class="text-xs text-slate-400">Interactive Science, Engineering & IT Project Map</p>
+                <p class="text-xs text-slate-400">Zero API Key / Open-Source Leaflet & OpenStreetMap</p>
             </div>
         </div>
 
         <div class="flex items-center space-x-3">
-            <div id="sync-status" class="flex items-center space-x-2 text-xs text-amber-400 bg-amber-950/50 border border-amber-800/50 px-3 py-1.5 rounded-full">
-                <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                <span>Connecting...</span>
+            <!-- Room Peer Sharing Code -->
+            <div class="hidden sm:flex items-center space-x-2 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg text-xs">
+                <span class="text-slate-400">Room Code:</span>
+                <span id="room-code-display" class="font-mono font-bold text-indigo-400 select-all">Generating...</span>
+                <button onclick="copyRoomLink()" title="Copy Join Link" class="text-slate-400 hover:text-white ml-1">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+
+            <div id="sync-status" class="flex items-center space-x-2 text-xs text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 px-3 py-1.5 rounded-full">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span>Ready (No API Key Required)</span>
             </div>
             <button id="export-btn" class="flex items-center space-x-1.5 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3 py-1.5 rounded-lg transition font-medium">
                 <i data-lucide="download" class="w-4 h-4"></i>
                 <span>Export JSON</span>
-            </button>
-            <button id="toggle-sidebar" class="md:hidden p-2 text-slate-300 hover:text-white bg-slate-800 rounded-lg">
-                <i data-lucide="panel-right" class="w-5 h-5"></i>
             </button>
         </div>
     </header>
@@ -74,7 +78,7 @@
         </div>
 
         <!-- Sidebar / Control Panel -->
-        <div id="sidebar" class="w-full md:w-[480px] bg-white border-l border-slate-200 flex flex-col h-full z-20 shadow-2xl transition-all duration-300 absolute right-0 md:relative">
+        <div id="sidebar" class="w-full md:w-[480px] bg-white border-l border-slate-200 flex flex-col h-full z-20 shadow-2xl transition-all duration-300">
             <!-- Sidebar Navigation Tabs -->
             <div class="flex border-b border-slate-200 bg-slate-50">
                 <button id="tab-add" onclick="switchTab('add')" class="flex-1 py-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-2 transition">
@@ -89,9 +93,9 @@
 
             <!-- Tab Content: Add Project Form -->
             <div id="content-add" class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-4">
-                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-900 flex items-start space-x-2.5">
-                    <i data-lucide="map-pin" class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5"></i>
-                    <span><strong>Tip:</strong> Click anywhere on the map to autofill latitude & longitude, or enter details manually below.</span>
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900 flex items-start space-x-2.5">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+                    <span><strong>100% Free OpenStreetMap:</strong> Click anywhere on the map to place pins. No Google API key or account needed!</span>
                 </div>
 
                 <form id="collab-form" class="space-y-3 text-xs">
@@ -120,28 +124,28 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block font-semibold text-slate-700 mb-1">Partner Institution *</label>
-                            <input type="text" id="form-partner" required placeholder="e.g. Vietnam National Univ" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <input type="text" id="form-partner" required placeholder="e.g. Can Tho University" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                         </div>
                         <div>
                             <label class="block font-semibold text-slate-700 mb-1">Lead Researcher / Facilitator</label>
-                            <input type="text" id="form-lead" placeholder="e.g. Dr. A. Smith" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <input type="text" id="form-lead" placeholder="e.g. Prof. Quang Bui" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block font-semibold text-slate-700 mb-1">Latitude *</label>
-                            <input type="number" step="any" id="form-lat" required placeholder="e.g. 10.762" class="w-full border border-slate-300 rounded-lg p-2.5 font-mono text-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <input type="number" step="any" id="form-lat" required placeholder="e.g. 10.030" class="w-full border border-slate-300 rounded-lg p-2.5 font-mono text-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                         </div>
                         <div>
                             <label class="block font-semibold text-slate-700 mb-1">Longitude *</label>
-                            <input type="number" step="any" id="form-lng" required placeholder="e.g. 106.660" class="w-full border border-slate-300 rounded-lg p-2.5 font-mono text-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <input type="number" step="any" id="form-lng" required placeholder="e.g. 105.770" class="w-full border border-slate-300 rounded-lg p-2.5 font-mono text-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                         </div>
                     </div>
 
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">Funding / Partner Mechanism</label>
-                        <input type="text" id="form-funding" placeholder="e.g. DFAT Aus4Innovation, ACIAR, Internal Seed" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <input type="text" id="form-funding" placeholder="e.g. DFAT Aus4Innovation, ACIAR, KONEKSI" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     </div>
 
                     <div>
@@ -150,15 +154,14 @@
                     </div>
 
                     <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md transition flex items-center justify-center space-x-2 text-sm">
-                        <i data-lucide="send" class="w-4 h-4"></i>
-                        <span>Publish Collaboration to Live Map</span>
+                        <i data-lucide="map-pin" class="w-4 h-4"></i>
+                        <span>Add Project Pin to Map</span>
                     </button>
                 </form>
             </div>
 
             <!-- Tab Content: Collaboration List & Filters -->
             <div id="content-list" class="flex-1 overflow-y-auto p-4 custom-scrollbar hidden flex flex-col space-y-3">
-                <!-- Search & Filters -->
                 <div class="space-y-2 pb-2 border-b border-slate-200">
                     <div class="relative">
                         <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
@@ -180,7 +183,6 @@
                     </div>
                 </div>
 
-                <!-- Live Project Cards List -->
                 <div id="project-cards-container" class="space-y-2.5 overflow-y-auto flex-1 custom-scrollbar">
                     <!-- Cards rendered dynamically -->
                 </div>
@@ -189,22 +191,7 @@
     </div>
 
     <script>
-        // --- 1. FIREBASE CONFIG & INITIALIZATION ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyDummyKeyForStandaloneTemplateOnly",
-            authDomain: "sea-pacific-collab.firebaseapp.com",
-            projectId: "sea-pacific-collab",
-            storageBucket: "sea-pacific-collab.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abcdef123456"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        // Dedicated public collection path
-        const COLLABS_REF = db.collection('artifacts').doc('sea-pacific-collab-app').collection('public').doc('data').collection('collaborations');
-
-        // --- 2. GLOBAL STATE & MAP SETUP ---
+        // --- 1. OPENSTREETMAP (LEAFLET) ZERO API KEY MAP SETUP ---
         let map;
         let markersGroup;
         let allCollaborations = [];
@@ -221,17 +208,16 @@
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             initMap();
-            listenToRealtimeData();
+            loadLocalStorageData();
             setupMapClickHandler();
         });
 
         function initMap() {
-            // Center over Southeast Asia & Pacific Region
+            // Free OpenStreetMap Tiles - No Key Needed
             map = L.map('map', { zoomControl: false }).setView([2.0, 118.0], 4);
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap &copy; CARTO',
-                subdomains: 'abcd',
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 maxZoom: 19
             }).addTo(map);
 
@@ -243,7 +229,6 @@
             map.flyTo([lat, lng], zoom, { duration: 1.5 });
         }
 
-        // --- 3. MAP CLICK HANDLER (AUTOFILL LAT/LNG) ---
         function setupMapClickHandler() {
             map.on('click', (e) => {
                 const { lat, lng } = e.latlng;
@@ -253,45 +238,42 @@
             });
         }
 
-        // --- 4. REALTIME FIREBASE SYNC & SEED DATA FALLBACK ---
-        function listenToRealtimeData() {
-            const statusEl = document.getElementById('sync-status');
-            
-            COLLABS_REF.onSnapshot((snapshot) => {
-                statusEl.className = "flex items-center space-x-2 text-xs text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 px-3 py-1.5 rounded-full";
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Live Multi-User Connected</span>`;
-
-                if (snapshot.empty) {
+        // --- 2. LOCAL STORAGE PERSISTENCE (100% Offline & Free) ---
+        function loadLocalStorageData() {
+            const saved = localStorage.getItem('sea_pacific_collaborations');
+            if (saved) {
+                try {
+                    allCollaborations = JSON.parse(saved);
+                } catch(e) {
                     seedDefaultCollaborations();
-                } else {
-                    allCollaborations = [];
-                    snapshot.forEach(doc => {
-                        allCollaborations.push({ id: doc.id, ...doc.data() });
-                    });
-                    updateUI();
                 }
-            }, (error) => {
-                console.warn("Firebase snapshot error. Operating in offline/local fallback:", error);
-                statusEl.className = "flex items-center space-x-2 text-xs text-amber-400 bg-amber-950/50 border border-amber-800/50 px-3 py-1.5 rounded-full";
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Local Session Active</span>`;
-                if(allCollaborations.length === 0) seedLocalDefaults();
-            });
+            } else {
+                seedDefaultCollaborations();
+            }
+            updateUI();
+        }
+
+        function saveLocalStorageData() {
+            localStorage.setItem('sea_pacific_collaborations', JSON.stringify(allCollaborations));
+            updateUI();
         }
 
         function seedDefaultCollaborations() {
-            const defaults = [
+            allCollaborations = [
                 {
+                    id: 'seed-1',
                     title: "Drone-Based Flood & Environmental Monitoring",
                     discipline: "Cross-Disciplinary",
                     country: "Vietnam",
                     partner: "Can Tho University",
-                    lead: "Prof. Quang Bui (Facilitator)",
+                    lead: "Prof. Quang Bui",
                     lat: 10.030,
                     lng: 105.770,
                     funding: "DFAT Aus4Innovation Grant",
                     description: "Integrating Autonomous Drones, Science hydrological models, and IT IoT sensor networks for Mekong Delta resilience."
                 },
                 {
+                    id: 'seed-2',
                     title: "Pacific Smart Microgrid & Off-Grid Energy",
                     discipline: "Engineering",
                     country: "Fiji",
@@ -303,6 +285,7 @@
                     description: "Engineering robust microgrid systems paired with IoT sensor diagnostics for remote island communities."
                 },
                 {
+                    id: 'seed-3',
                     title: "Coral Reef Health AI & Coral Bleaching Models",
                     discipline: "Science",
                     country: "Indonesia",
@@ -314,29 +297,10 @@
                     description: "Combining marine science field sampling with deep learning computer vision to quantify reef restoration."
                 }
             ];
-
-            defaults.forEach(item => COLLABS_REF.add(item));
+            saveLocalStorageData();
         }
 
-        function seedLocalDefaults() {
-            allCollaborations = [
-                {
-                    id: 'local-1',
-                    title: "Drone-Based Flood & Environmental Monitoring",
-                    discipline: "Cross-Disciplinary",
-                    country: "Vietnam",
-                    partner: "Can Tho University",
-                    lead: "Prof. Quang Bui (Facilitator)",
-                    lat: 10.030,
-                    lng: 105.770,
-                    funding: "DFAT Aus4Innovation Grant",
-                    description: "Integrating Autonomous Drones, Science hydrological models, and IT IoT sensor networks for Mekong Delta resilience."
-                }
-            ];
-            updateUI();
-        }
-
-        // --- 5. RENDER MAP MARKERS & SIDEBAR CARDS ---
+        // --- 3. RENDER MAP MARKERS & SIDEBAR CARDS ---
         function updateUI() {
             document.getElementById('count-badge').textContent = allCollaborations.length;
             populateCountryFilter();
@@ -454,11 +418,12 @@
             lucide.createIcons();
         }
 
-        // --- 6. SUBMIT NEW FORM DATA TO FIREBASE ---
+        // --- 4. FORM SUBMISSION ---
         document.getElementById('collab-form').onsubmit = function(e) {
             e.preventDefault();
 
             const newCollab = {
+                id: 'proj-' + Date.now(),
                 title: document.getElementById('form-title').value,
                 discipline: document.getElementById('form-discipline').value,
                 country: document.getElementById('form-country').value,
@@ -467,24 +432,17 @@
                 lat: parseFloat(document.getElementById('form-lat').value),
                 lng: parseFloat(document.getElementById('form-lng').value),
                 funding: document.getElementById('form-funding').value,
-                description: document.getElementById('form-desc').value,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                description: document.getElementById('form-desc').value
             };
 
-            COLLABS_REF.add(newCollab).then(() => {
-                document.getElementById('collab-form').reset();
-                switchTab('list');
-                map.flyTo([newCollab.lat, newCollab.lng], 7, { duration: 1.2 });
-            }).catch(err => {
-                console.warn("Firestore save fallback to local state:", err);
-                allCollaborations.unshift({ id: 'local-' + Date.now(), ...newCollab });
-                updateUI();
-                document.getElementById('collab-form').reset();
-                switchTab('list');
-            });
+            allCollaborations.unshift(newCollab);
+            saveLocalStorageData();
+            document.getElementById('collab-form').reset();
+            switchTab('list');
+            map.flyTo([newCollab.lat, newCollab.lng], 7, { duration: 1.2 });
         };
 
-        // --- 7. TAB & SIDEBAR NAVIGATION ---
+        // --- 5. NAVIGATION & EXPORT ---
         function switchTab(tab) {
             activeTab = tab;
             const btnAdd = document.getElementById('tab-add');
@@ -505,7 +463,6 @@
             }
         }
 
-        // --- 8. EXPORT DATA JSON ---
         document.getElementById('export-btn').onclick = function() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allCollaborations, null, 2));
             const downloadAnchor = document.createElement('a');
@@ -514,12 +471,6 @@
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
-        };
-
-        // Mobile Sidebar Toggle
-        document.getElementById('toggle-sidebar').onclick = function() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('hidden');
         };
     </script>
 </body>
