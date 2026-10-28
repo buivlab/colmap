@@ -11,7 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/ol@v8.2.0/dist/ol.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Firebase SDKs (v10.8.0 Compatibility Mode) -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
@@ -22,7 +22,6 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        /* OpenLayers Popup Styling */
         .ol-popup {
             position: absolute;
             background-color: white;
@@ -32,8 +31,8 @@
             border: 1px solid #e2e8f0;
             bottom: 12px;
             left: -50px;
-            min-width: 240px;
-            max-width: 300px;
+            min-width: 260px;
+            max-width: 320px;
             z-index: 40;
         }
         .ol-popup:after, .ol-popup:before {
@@ -45,30 +44,15 @@
             position: absolute;
             pointer-events: none;
         }
-        .ol-popup:after {
-            border-top-color: white;
-            border-width: 10px;
-            left: 48px;
-            margin-left: -10px;
-        }
-        .ol-popup:before {
-            border-top-color: #cbd5e1;
-            border-width: 11px;
-            left: 48px;
-            margin-left: -11px;
-        }
+        .ol-popup:after { border-top-color: white; border-width: 10px; left: 48px; margin-left: -10px; }
+        .ol-popup:before { border-top-color: #cbd5e1; border-width: 11px; left: 48px; margin-left: -11px; }
         .ol-popup-closer {
             text-decoration: none;
             position: absolute;
-            top: 8px;
-            right: 10px;
-            color: #94a3b8;
-            font-size: 16px;
-            font-weight: bold;
+            top: 8px; right: 10px;
+            color: #94a3b8; font-size: 16px; font-weight: bold;
         }
-        .ol-popup-closer:hover {
-            color: #334155;
-        }
+        .ol-popup-closer:hover { color: #334155; }
     </style>
 </head>
 <body class="bg-slate-900 font-sans antialiased text-slate-800 overflow-hidden">
@@ -80,12 +64,11 @@
             </div>
             <div>
                 <h1 class="font-bold text-lg leading-tight text-slate-100">SE Asia & Pacific Collaboration Hub</h1>
-                <p class="text-xs text-slate-400">Science, Engineering & IT Research Map</p>
+                <p class="text-xs text-slate-400">Science, Engineering & IT Research Platform</p>
             </div>
         </div>
 
         <div class="flex items-center space-x-3">
-            <!-- Firebase Connection Status Badge -->
             <div id="firebase-status" class="flex items-center space-x-2 text-xs text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 px-3 py-1.5 rounded-full">
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>Connecting to Firebase...</span>
@@ -95,9 +78,6 @@
                 <i data-lucide="download" class="w-4 h-4"></i>
                 <span>Export JSON</span>
             </button>
-            <button id="toggle-sidebar" class="md:hidden p-2 text-slate-300 hover:text-white bg-slate-800 rounded-lg">
-                <i data-lucide="panel-right" class="w-5 h-5"></i>
-            </button>
         </div>
     </header>
 
@@ -106,13 +86,11 @@
         <div class="flex-1 relative">
             <div id="map"></div>
 
-            <!-- OpenLayers Popup Container -->
             <div id="popup" class="ol-popup">
                 <a href="#" id="popup-closer" class="ol-popup-closer">&times;</a>
                 <div id="popup-content"></div>
             </div>
 
-            <!-- Regional Quick-Fly Controls -->
             <div class="absolute bottom-6 left-6 z-20 flex flex-wrap gap-2 glass-panel p-2 rounded-xl shadow-xl border border-slate-200/50 max-w-xl">
                 <span class="text-xs font-semibold text-slate-500 uppercase px-2 py-1 flex items-center">
                     <i data-lucide="compass" class="w-3.5 h-3.5 mr-1"></i> Quick View:
@@ -127,22 +105,40 @@
         </div>
 
         <!-- Sidebar / Control Panel -->
-        <div id="sidebar" class="w-full md:w-[480px] bg-white border-l border-slate-200 flex flex-col h-full z-20 shadow-2xl transition-all duration-300">
-            <!-- Sidebar Navigation Tabs -->
-            <div class="flex border-b border-slate-200 bg-slate-50">
-                <button id="tab-add" onclick="switchTab('add')" class="flex-1 py-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-2 transition">
+        <div id="sidebar" class="w-full md:w-[500px] bg-white border-l border-slate-200 flex flex-col h-full z-20 shadow-2xl transition-all duration-300">
+            <!-- Navigation Tabs -->
+            <div class="flex border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                <button id="tab-add" onclick="switchTab('add')" class="flex-1 py-3 border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-1.5 transition">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                    <span>Add Project</span>
+                    <span id="tab-add-label">Add Project</span>
                 </button>
-                <button id="tab-list" onclick="switchTab('list')" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-2 transition">
+                <button id="tab-list" onclick="switchTab('list')" class="flex-1 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1.5 transition">
                     <i data-lucide="layers" class="w-4 h-4"></i>
-                    <span>Collaborations (<span id="count-badge">0</span>)</span>
+                    <span>Projects (<span id="count-badge">0</span>)</span>
+                </button>
+                <button id="tab-stats" onclick="switchTab('stats')" class="flex-1 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1.5 transition">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    <span>Stats</span>
+                </button>
+                <button id="tab-funding" onclick="switchTab('funding')" class="flex-1 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1.5 transition">
+                    <i data-lucide="banknote" class="w-4 h-4"></i>
+                    <span>Grants</span>
                 </button>
             </div>
 
-            <!-- Tab Content: Add Project Form -->
+            <!-- TAB 1: ADD / EDIT PROJECT FORM -->
             <div id="content-add" class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-4">
+                <div id="editing-banner" class="hidden bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3 text-xs flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="edit-3" class="w-4 h-4 text-amber-600 shrink-0"></i>
+                        <span>Editing project: <strong id="editing-project-name">...</strong></span>
+                    </div>
+                    <button onclick="cancelEditing()" class="text-amber-700 hover:text-amber-900 font-bold underline">Cancel</button>
+                </div>
+
                 <form id="collab-form" class="space-y-3 text-xs">
+                    <input type="hidden" id="form-editing-id" value="">
+
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">Project Title *</label>
                         <input type="text" id="form-title" required placeholder="e.g. Mangrove Climate Sensors & Flood Early Warning" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
@@ -189,22 +185,24 @@
 
                     <div>
                         <label class="block font-semibold text-slate-700 mb-1">Funding / Partner Mechanism</label>
-                        <input type="text" id="form-funding" placeholder="e.g. DFAT Aus4Innovation, ACIAR, KONEKSI" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <select id="form-funding" class="w-full border border-slate-300 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <option value="">-- Select or type custom funding --</option>
+                        </select>
                     </div>
 
                     <div>
-                        <label class="block font-semibold text-slate-700 mb-1">Project Summary / Collaboration Scope</label>
+                        <label class="block font-semibold text-slate-700 mb-1">Project Summary / Scope</label>
                         <textarea id="form-desc" rows="3" placeholder="Briefly describe joint goals, methodology, student involvement..." class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
                     </div>
 
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md transition flex items-center justify-center space-x-2 text-sm">
+                    <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md transition flex items-center justify-center space-x-2 text-sm">
                         <i data-lucide="map-pin" class="w-4 h-4"></i>
-                        <span>Add Project Pin to Map</span>
+                        <span id="submit-btn-text">Add Project Pin to Map</span>
                     </button>
                 </form>
             </div>
 
-            <!-- Tab Content: Collaboration List & Filters -->
+            <!-- TAB 2: PROJECTS LIST & FILTERS -->
             <div id="content-list" class="flex-1 overflow-y-auto p-4 custom-scrollbar hidden flex flex-col space-y-3">
                 <div class="space-y-2 pb-2 border-b border-slate-200">
                     <div class="relative">
@@ -227,15 +225,115 @@
                     </div>
                 </div>
 
-                <div id="project-cards-container" class="space-y-2.5 overflow-y-auto flex-1 custom-scrollbar">
-                    <!-- Cards rendered dynamically -->
+                <div id="project-cards-container" class="space-y-2.5 overflow-y-auto flex-1 custom-scrollbar"></div>
+            </div>
+
+            <!-- TAB 3: STATS DASHBOARD -->
+            <div id="content-stats" class="flex-1 overflow-y-auto p-5 custom-scrollbar hidden space-y-5">
+                <h3 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-600"></i>
+                    <span>Regional Collaboration Analytics</span>
+                </h3>
+
+                <!-- Summary Stat Cards -->
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-center">
+                        <span class="block text-2xl font-black text-indigo-700" id="stat-total-projects">0</span>
+                        <span class="text-[11px] font-medium text-indigo-900">Total Projects</span>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
+                        <span class="block text-2xl font-black text-emerald-700" id="stat-total-countries">0</span>
+                        <span class="text-[11px] font-medium text-emerald-900">Partner Nations</span>
+                    </div>
+                    <div class="bg-purple-50 border border-purple-100 rounded-xl p-3 text-center">
+                        <span class="block text-2xl font-black text-purple-700" id="stat-total-partners">0</span>
+                        <span class="text-[11px] font-medium text-purple-900">Institutions</span>
+                    </div>
                 </div>
+
+                <!-- Discipline Breakdown Table -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                    <h4 class="font-bold text-xs text-slate-700 uppercase tracking-wider">Breakdown by Discipline</h4>
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-slate-400 font-semibold">
+                                <th class="pb-2">Discipline</th>
+                                <th class="pb-2 text-right">Projects</th>
+                                <th class="pb-2 text-right">Share</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stat-table-discipline" class="divide-y divide-slate-200"></tbody>
+                    </table>
+                </div>
+
+                <!-- Country Breakdown Table -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                    <h4 class="font-bold text-xs text-slate-700 uppercase tracking-wider">Top Regional Partner Nations</h4>
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-slate-400 font-semibold">
+                                <th class="pb-2">Country</th>
+                                <th class="pb-2 text-right">Collaborations</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stat-table-country" class="divide-y divide-slate-200"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 4: FUNDING SOURCES MANAGER -->
+            <div id="content-funding" class="flex-1 overflow-y-auto p-5 custom-scrollbar hidden space-y-5">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-slate-900 text-sm flex items-center space-x-2">
+                        <i data-lucide="banknote" class="w-4 h-4 text-emerald-600"></i>
+                        <span>AU-SEA Grant Opportunities</span>
+                    </h3>
+                    <button onclick="toggleFundingForm()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        <span>Add Grant</span>
+                    </button>
+                </div>
+
+                <!-- Add/Edit Funding Form -->
+                <form id="funding-form" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 text-xs">
+                    <input type="hidden" id="funding-editing-id" value="">
+                    <h4 id="funding-form-title" class="font-bold text-slate-800">Add New Funding Mechanism</h4>
+                    
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Grant Name *</label>
+                        <input type="text" id="funding-name" required placeholder="e.g. Aus4Innovation Bilateral Grant" class="w-full border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Funding Amount / Scope</label>
+                            <input type="text" id="funding-amount" placeholder="e.g. $250k – $1M AUD" class="w-full border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Eligible Region / Nations</label>
+                            <input type="text" id="funding-region" placeholder="e.g. Vietnam, Indonesia, Pacific" class="w-full border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Description / Focus Areas</label>
+                        <textarea id="funding-desc" rows="2" placeholder="e.g. High-tech agriculture, AI, climate resilience..." class="w-full border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                    </div>
+
+                    <div class="flex space-x-2 pt-1">
+                        <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg transition">Save Grant Source</button>
+                        <button type="button" onclick="toggleFundingForm()" class="px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 rounded-lg transition">Cancel</button>
+                    </div>
+                </form>
+
+                <!-- List of Funding Cards -->
+                <div id="funding-list-container" class="space-y-3"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. USER'S FIREBASE CONFIGURATION ---
+        // --- 1. FIREBASE CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyCyM4_LwKyAoivwJTPeel0NNYCZHCp6Hgo",
             authDomain: "colmap-a6915.firebaseapp.com",
@@ -246,18 +344,15 @@
             measurementId: "G-6W6YQDTJBF"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const collabsRef = db.collection("collaborations");
+        const fundingRef = db.collection("funding_sources");
 
         // --- 2. OPENLAYERS MAP SETUP ---
-        let map;
-        let vectorSource;
-        let vectorLayer;
-        let overlay;
+        let map, vectorSource, vectorLayer, overlay;
         let allCollaborations = [];
-        let activeTab = 'add';
+        let allFundingSources = [];
 
         const disciplineColors = {
             'Science': { bg: '#10B981', label: 'bg-emerald-100 text-emerald-800' },
@@ -271,6 +366,7 @@
             lucide.createIcons();
             initOpenLayersMap();
             listenToFirestore();
+            listenToFundingSources();
         });
 
         function initOpenLayersMap() {
@@ -289,23 +385,13 @@
             };
 
             vectorSource = new ol.source.Vector();
-            vectorLayer = new ol.layer.Vector({
-                source: vectorSource
-            });
+            vectorLayer = new ol.layer.Vector({ source: vectorSource });
 
             map = new ol.Map({
                 target: 'map',
-                layers: [
-                    new ol.layer.Tile({
-                        source: new ol.source.OSM()
-                    }),
-                    vectorLayer
-                ],
+                layers: [ new ol.layer.Tile({ source: new ol.source.OSM() }), vectorLayer ],
                 overlays: [overlay],
-                view: new ol.View({
-                    center: ol.proj.fromLonLat([118.0, 2.0]),
-                    zoom: 4
-                })
+                view: new ol.View({ center: ol.proj.fromLonLat([118.0, 2.0]), zoom: 4 })
             });
 
             map.on('singleclick', function(evt) {
@@ -322,7 +408,11 @@
                         <p class="text-xs text-slate-600 mb-1"><strong>Partner:</strong> ${c.partner} (${c.country})</p>
                         ${c.lead ? `<p class="text-xs text-slate-500 mb-1"><strong>Lead:</strong> ${c.lead}</p>` : ''}
                         ${c.funding ? `<p class="text-xs text-indigo-700 font-semibold mb-1"><strong>Funding:</strong> ${c.funding}</p>` : ''}
-                        ${c.description ? `<p class="text-xs text-slate-600 mt-1 border-t border-slate-100 pt-1 line-clamp-3">${c.description}</p>` : ''}
+                        ${c.description ? `<p class="text-xs text-slate-600 mt-1 border-t border-slate-100 pt-1 line-clamp-2 mb-2">${c.description}</p>` : ''}
+                        <div class="flex space-x-2 pt-2 border-t border-slate-100">
+                            <button onclick="editProject('${c.id}')" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-1 rounded text-xs transition">Edit</button>
+                            <button onclick="deleteProject('${c.id}')" class="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold py-1 rounded text-xs transition">Delete</button>
+                        </div>
                     `;
                     overlay.setPosition(evt.coordinate);
                 } else {
@@ -336,91 +426,78 @@
         }
 
         function flyToRegion(lon, lat, zoom) {
-            map.getView().animate({
-                center: ol.proj.fromLonLat([lon, lat]),
-                zoom: zoom,
-                duration: 1200
-            });
+            map.getView().animate({ center: ol.proj.fromLonLat([lon, lat]), zoom: zoom, duration: 1200 });
         }
 
-        // --- 3. FIREBASE REALTIME LISTENER ---
+        // --- 3. FIREBASE LISTENERS & DATA MANAGEMENT ---
         function listenToFirestore() {
             const statusEl = document.getElementById('firebase-status');
-
             collabsRef.onSnapshot((snapshot) => {
                 statusEl.className = "flex items-center space-x-2 text-xs text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 px-3 py-1.5 rounded-full";
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Firebase Realtime Connected</span>`;
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Firebase Live Connected</span>`;
 
                 if (snapshot.empty) {
-                    seedInitialDataToFirebase();
+                    seedInitialProjects();
                 } else {
                     allCollaborations = [];
-                    snapshot.forEach((doc) => {
-                        allCollaborations.push({ id: doc.id, ...doc.data() });
-                    });
+                    snapshot.forEach(doc => allCollaborations.push({ id: doc.id, ...doc.data() }));
                     updateUI();
                 }
             }, (error) => {
-                console.warn("Firestore error or offline fallback:", error);
+                console.warn("Firestore error:", error);
                 statusEl.className = "flex items-center space-x-2 text-xs text-amber-400 bg-amber-950/50 border border-amber-800/50 px-3 py-1.5 rounded-full";
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Firebase Offline Mode</span>`;
-                if (allCollaborations.length === 0) loadLocalStorageData();
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Offline Mode</span>`;
             });
         }
 
-        function seedInitialDataToFirebase() {
-            const initialProjects = [
-                // {
-                //     title: "Drone-Based Rubbish & Environmental Monitoring",
-                //     discipline: "Cross-Disciplinary",
-                //     country: "Vietnam",
-                //     partner: "Can Tho University",
-                //     lead: "Prof. Quang Bui",
-                //     lat: 10.030,
-                //     lng: 105.770,
-                //     funding: "DFAT Aus4Innovation Grant",
-                //     description: "Integrating Autonomous Drones, Science hydrological models, and IT IoT sensor networks for Mekong Delta resilience."
-                // },
-                // {
-                //     title: "Pacific Smart Microgrid & Off-Grid Energy",
-                //     discipline: "Engineering",
-                //     country: "Fiji",
-                //     partner: "University of the South Pacific (USP)",
-                //     lead: "Dr. K. Sharma",
-                //     lat: -18.148,
-                //     lng: 178.444,
-                //     funding: "DFAT Pacific Energy Partnership",
-                //     description: "Engineering robust microgrid systems paired with IoT sensor diagnostics for remote island communities."
-                // },
-                // {
-                //     title: "Coral Reef Health AI & Coral Bleaching Models",
-                //     discipline: "Science",
-                //     country: "Indonesia",
-                //     partner: "BRIN / IPB University",
-                //     lead: "Dr. Maya Wijaya",
-                //     lat: -6.597,
-                //     lng: 106.806,
-                //     funding: "KONEKSI Collaborative Grant",
-                //     description: "Combining marine science field sampling with deep learning computer vision to quantify reef restoration."
-                // }
+        function listenToFundingSources() {
+            fundingRef.onSnapshot((snapshot) => {
+                if (snapshot.empty) {
+                    seedInitialFunding();
+                } else {
+                    allFundingSources = [];
+                    snapshot.forEach(doc => allFundingSources.push({ id: doc.id, ...doc.data() }));
+                    renderFundingSources();
+                    updateFundingDropdown();
+                }
+            });
+        }
+
+        function seedInitialProjects() {
+            const initial = [
+                { title: "Drone-Based Flood & Environmental Monitoring", discipline: "Cross-Disciplinary", country: "Vietnam", partner: "Can Tho University", lead: "Prof. Quang Bui", lat: 10.030, lng: 105.770, funding: "Aus4Innovation Bilateral Grant", description: "Integrating Autonomous Drones, hydrological models, and IoT sensor networks for Mekong Delta resilience." },
+                { title: "Pacific Smart Microgrid & Off-Grid Energy", discipline: "Engineering", country: "Fiji", partner: "University of the South Pacific (USP)", lead: "Dr. K. Sharma", lat: -18.148, lng: 178.444, funding: "PNGAus / Pacific Partnership", description: "Engineering robust microgrid systems paired with IoT sensor diagnostics for remote island communities." },
+                { title: "Coral Reef Health AI & Coral Bleaching Models", discipline: "Science", country: "Indonesia", partner: "BRIN / IPB University", lead: "Dr. Maya Wijaya", lat: -6.597, lng: 106.806, funding: "KONEKSI Collaborative Grant", description: "Combining marine science field sampling with deep learning computer vision to quantify reef restoration." }
             ];
-
-            initialProjects.forEach(item => collabsRef.add(item));
+            initial.forEach(p => collabsRef.add(p));
         }
 
-        function loadLocalStorageData() {
-            const saved = localStorage.getItem('sea_pacific_collaborations_fb');
-            if (saved) {
-                try { allCollaborations = JSON.parse(saved); } catch(e) {}
-            }
-            updateUI();
+        function seedInitialFunding() {
+            const initialGrants = [
+                                { name: "VinFuture Prize & Grant", amount: "$3M USD Grand Prize / $500k Special Prizes", region: "Global / Vietnam", description: "Global science and technology prize honoring breakthrough research and technological innovations that create positive change in humanity's lives, with strong relevance for Vietnam and emerging economies." },
+{ name: "Aus4Innovation (Vietnam & Australia)", amount: "$250k – $1M AUD", region: "Vietnam", description: "CSIRO & DFAT-led grants targeting AI, high-tech agriculture, and technology transfer in Vietnam." },
+                { name: "KONEKSI (Indonesia & Australia)", amount: "$100k – $300k AUD", region: "Indonesia", description: "Australia's flagship collaborative research grant mechanism with BRIN and Indonesian universities focused on climate change and digital transformation." },
+                { name: "ASEAN-Australia Centre Grants Program (DFAT)", amount: "$50k – $200k/yr (up to $400k)", region: "SE Asia / ASEAN", description: "Multi-year funding aligned with Invested: Australia's Southeast Asia Economic Strategy to 2040, focusing on economic engagement, digital transformation, and higher education capabilities." },
+                { name: "DFAT Partnerships for a Healthy Region", amount: "$100k – $500k AUD", region: "SE Asia & Pacific", description: "Focused on climate and health impacts, vector surveillance, health data, and pandemic preparedness across Southeast Asia and the Pacific." },
+                { name: "NHMRC e-ASIA Joint Research Program (e-ASIA JRP)", amount: "Varies (Multilateral)", region: "SE Asia / ASEAN", description: "Joint multilateral health, environmental, and disaster risk reduction grant rounds connecting Australian researchers directly with ASEAN partners." },
+                { name: "PNGAus Partnership Grants", amount: "Varies by scope", region: "Papua New Guinea", description: "Dedicated PNG mechanisms covering off-grid energy, water security, disaster resilience, and STEM capacity building." },
+                { name: "AISRF / Indo-Pacific Bilateral Calls", amount: "Varies", region: "Indo-Pacific / Regional", description: "Joint research projects in clean energy, AI, quantum, and ocean science." }
+            ];
+            initialGrants.forEach(g => fundingRef.add(g));
+        },
+                { name: "KONEKSI Collaborative Grant", amount: "$100k – $300k AUD", region: "Indonesia", description: "Flagship research partnership with BRIN focusing on climate resilience and digital transformation." },
+                { name: "ASEAN-Australia Centre Grants", amount: "$50k – $200k/yr", region: "SE Asia / ASEAN", description: "Multi-year DFAT grants supporting education, digital capabilities, and economic engagement." },
+                { name: "Partnerships for a Healthy Region", amount: "$100k – $500k AUD", region: "SE Asia & Pacific", description: "Addressing climate health impacts, vector surveillance, health data, and pandemic preparedness." }
+            ];
+            initialGrants.forEach(g => fundingRef.add(g));
         }
 
-        // --- 4. RENDER OPENLAYERS MARKERS & CARDS ---
+        // --- 4. RENDER UI, STATS & FILTERS ---
         function updateUI() {
             document.getElementById('count-badge').textContent = allCollaborations.length;
             populateCountryFilter();
             applyFilters();
+            renderStatsDashboard();
         }
 
         function populateCountryFilter() {
@@ -431,8 +508,7 @@
             select.innerHTML = '<option value="ALL">All Countries</option>';
             countries.forEach(c => {
                 const opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
+                opt.value = c; opt.textContent = c;
                 select.appendChild(opt);
             });
             select.value = currentVal;
@@ -472,12 +548,10 @@
             vectorSource.clear();
             items.forEach(c => {
                 if (!c.lat || !c.lng) return;
-
                 const feature = new ol.Feature({
                     geometry: new ol.geom.Point(ol.proj.fromLonLat([c.lng, c.lat])),
                     collabData: c
                 });
-
                 feature.setStyle(createFeatureStyle(c.discipline));
                 vectorSource.addFeature(feature);
             });
@@ -488,45 +562,215 @@
             container.innerHTML = '';
 
             if (items.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8 text-slate-400">
-                        <i data-lucide="folder-open" class="w-8 h-8 mx-auto mb-2 stroke-1"></i>
-                        <p class="text-xs">No collaborations match your filter.</p>
-                    </div>
-                `;
-                lucide.createIcons();
+                container.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs">No collaborations match your filter.</div>`;
                 return;
             }
 
             items.forEach(c => {
                 const badgeStyle = (disciplineColors[c.discipline] || { label: 'bg-slate-100 text-slate-800' }).label;
                 const card = document.createElement('div');
-                card.className = "p-3 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md transition cursor-pointer space-y-1.5";
-                
-                card.onclick = () => {
-                    flyToRegion(c.lng, c.lat, 8);
-                };
+                card.className = "p-3 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md transition space-y-1.5";
 
                 card.innerHTML = `
                     <div class="flex items-start justify-between">
                         <span class="px-2 py-0.5 text-[10px] font-bold rounded ${badgeStyle} uppercase">${c.discipline}</span>
                         <span class="text-[11px] font-semibold text-slate-500">${c.country}</span>
                     </div>
-                    <h4 class="font-bold text-xs text-slate-800 leading-snug">${c.title}</h4>
+                    <h4 class="font-bold text-xs text-slate-800 leading-snug cursor-pointer hover:text-indigo-600" onclick="flyToRegion(${c.lng}, ${c.lat}, 8)">${c.title}</h4>
                     <p class="text-[11px] text-slate-600"><strong>Partner:</strong> ${c.partner}</p>
                     ${c.lead ? `<p class="text-[11px] text-slate-500"><strong>Lead:</strong> ${c.lead}</p>` : ''}
                     ${c.funding ? `<p class="text-[10px] text-indigo-700 font-medium">💰 ${c.funding}</p>` : ''}
+                    <div class="flex items-center justify-end space-x-2 pt-1 border-t border-slate-100">
+                        <button onclick="editProject('${c.id}')" class="text-[11px] text-amber-600 hover:text-amber-800 font-semibold px-2 py-0.5 rounded bg-amber-50">Edit</button>
+                        <button onclick="deleteProject('${c.id}')" class="text-[11px] text-rose-600 hover:text-rose-800 font-semibold px-2 py-0.5 rounded bg-rose-50">Delete</button>
+                    </div>
                 `;
                 container.appendChild(card);
             });
             lucide.createIcons();
         }
 
-        // --- 5. FORM SUBMISSION TO FIREBASE ---
+        // --- 5. STATS DASHBOARD RENDERER ---
+        function renderStatsDashboard() {
+            const totalProjects = allCollaborations.length;
+            const uniqueCountries = new Set(allCollaborations.map(c => c.country).filter(Boolean)).size;
+            const uniquePartners = new Set(allCollaborations.map(c => c.partner).filter(Boolean)).size;
+
+            document.getElementById('stat-total-projects').textContent = totalProjects;
+            document.getElementById('stat-total-countries').textContent = uniqueCountries;
+            document.getElementById('stat-total-partners').textContent = uniquePartners;
+
+            // Discipline Breakdown
+            const discCounts = {};
+            allCollaborations.forEach(c => discCounts[c.discipline] = (discCounts[c.discipline] || 0) + 1);
+
+            const discTbody = document.getElementById('stat-table-discipline');
+            discTbody.innerHTML = '';
+            Object.keys(disciplineColors).forEach(disc => {
+                const count = discCounts[disc] || 0;
+                const pct = totalProjects > 0 ? ((count / totalProjects) * 100).toFixed(1) : 0;
+                const tr = document.createElement('tr');
+                tr.className = "py-1.5";
+                tr.innerHTML = `
+                    <td class="py-1.5 font-medium text-slate-800 flex items-center space-x-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${disciplineColors[disc].bg}"></span>
+                        <span>${disc}</span>
+                    </td>
+                    <td class="py-1.5 text-right font-bold text-slate-900">${count}</td>
+                    <td class="py-1.5 text-right text-slate-500 font-mono">${pct}%</td>
+                `;
+                discTbody.appendChild(tr);
+            });
+
+            // Country Breakdown
+            const countryCounts = {};
+            allCollaborations.forEach(c => { if(c.country) countryCounts[c.country] = (countryCounts[c.country] || 0) + 1; });
+            const sortedCountries = Object.entries(countryCounts).sort((a,b) => b[1] - a[1]);
+
+            const countryTbody = document.getElementById('stat-table-country');
+            countryTbody.innerHTML = '';
+            sortedCountries.forEach(([ctry, count]) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-1.5 font-medium text-slate-800">${ctry}</td>
+                    <td class="py-1.5 text-right font-bold text-indigo-600">${count}</td>
+                `;
+                countryTbody.appendChild(tr);
+            });
+        }
+
+        // --- 6. FUNDING SOURCES MANAGEMENT ---
+        function renderFundingSources() {
+            const container = document.getElementById('funding-list-container');
+            container.innerHTML = '';
+
+            allFundingSources.forEach(f => {
+                const card = document.createElement('div');
+                card.className = "p-3.5 rounded-xl border border-slate-200 bg-white hover:shadow-sm transition space-y-1.5 text-xs";
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <h4 class="font-bold text-slate-900 text-xs">${f.name}</h4>
+                        <span class="px-2 py-0.5 font-semibold text-[10px] rounded bg-emerald-100 text-emerald-800">${f.region || 'Regional'}</span>
+                    </div>
+                    ${f.amount ? `<p class="font-mono text-indigo-700 font-bold text-[11px]">💰 ${f.amount}</p>` : ''}
+                    ${f.description ? `<p class="text-slate-600 leading-relaxed">${f.description}</p>` : ''}
+                    <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+                        <button onclick="editFunding('${f.id}')" class="text-amber-600 hover:text-amber-800 font-semibold text-[11px]">Edit</button>
+                        <button onclick="deleteFunding('${f.id}')" class="text-rose-600 hover:text-rose-800 font-semibold text-[11px]">Delete</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updateFundingDropdown() {
+            const select = document.getElementById('form-funding');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">-- Select or type custom funding --</option>';
+            
+            allFundingSources.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.name;
+                opt.textContent = `${f.name} (${f.region || 'Bilateral'})`;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        }
+
+        function toggleFundingForm(fundingObj = null) {
+            const form = document.getElementById('funding-form');
+            form.classList.toggle('hidden');
+
+            if (fundingObj) {
+                document.getElementById('funding-editing-id').value = fundingObj.id;
+                document.getElementById('funding-name').value = fundingObj.name || '';
+                document.getElementById('funding-amount').value = fundingObj.amount || '';
+                document.getElementById('funding-region').value = fundingObj.region || '';
+                document.getElementById('funding-desc').value = fundingObj.description || '';
+                document.getElementById('funding-form-title').textContent = "Edit Funding Mechanism";
+            } else {
+                document.getElementById('funding-form').reset();
+                document.getElementById('funding-editing-id').value = '';
+                document.getElementById('funding-form-title').textContent = "Add New Funding Mechanism";
+            }
+        }
+
+        document.getElementById('funding-form').onsubmit = function(e) {
+            e.preventDefault();
+            const editId = document.getElementById('funding-editing-id').value;
+            const data = {
+                name: document.getElementById('funding-name').value,
+                amount: document.getElementById('funding-amount').value,
+                region: document.getElementById('funding-region').value,
+                description: document.getElementById('funding-desc').value
+            };
+
+            if (editId) {
+                fundingRef.doc(editId).update(data);
+            } else {
+                fundingRef.add(data);
+            }
+            toggleFundingForm();
+        };
+
+        function editFunding(id) {
+            const f = allFundingSources.find(item => item.id === id);
+            if (f) toggleFundingForm(f);
+        }
+
+        function deleteFunding(id) {
+            if (confirm("Are you sure you want to delete this funding opportunity?")) {
+                fundingRef.doc(id).delete();
+            }
+        }
+
+        // --- 7. EDIT & DELETE PROJECT FUNCTIONS ---
+        function editProject(id) {
+            const p = allCollaborations.find(item => item.id === id);
+            if (!p) return;
+
+            document.getElementById('form-editing-id').value = p.id;
+            document.getElementById('form-title').value = p.title || '';
+            document.getElementById('form-discipline').value = p.discipline || 'Science';
+            document.getElementById('form-country').value = p.country || '';
+            document.getElementById('form-partner').value = p.partner || '';
+            document.getElementById('form-lead').value = p.lead || '';
+            document.getElementById('form-lat').value = p.lat || '';
+            document.getElementById('form-lng').value = p.lng || '';
+            document.getElementById('form-funding').value = p.funding || '';
+            document.getElementById('form-desc').value = p.description || '';
+
+            document.getElementById('editing-banner').classList.remove('hidden');
+            document.getElementById('editing-project-name').textContent = p.title;
+            document.getElementById('submit-btn-text').textContent = "Update Project Pin";
+            document.getElementById('tab-add-label').textContent = "Edit Project";
+
+            overlay.setPosition(undefined);
+            switchTab('add');
+        }
+
+        function cancelEditing() {
+            document.getElementById('collab-form').reset();
+            document.getElementById('form-editing-id').value = '';
+            document.getElementById('editing-banner').classList.add('hidden');
+            document.getElementById('submit-btn-text').textContent = "Add Project Pin to Map";
+            document.getElementById('tab-add-label').textContent = "Add Project";
+        }
+
+        function deleteProject(id) {
+            if (confirm("Are you sure you want to delete this collaboration pin?")) {
+                collabsRef.doc(id).delete().then(() => {
+                    overlay.setPosition(undefined);
+                });
+            }
+        }
+
+        // Form Submit Handler (Create vs Update)
         document.getElementById('collab-form').onsubmit = function(e) {
             e.preventDefault();
+            const editId = document.getElementById('form-editing-id').value;
 
-            const newCollab = {
+            const payload = {
                 title: document.getElementById('form-title').value,
                 discipline: document.getElementById('form-discipline').value,
                 country: document.getElementById('form-country').value,
@@ -536,53 +780,50 @@
                 lng: parseFloat(document.getElementById('form-lng').value),
                 funding: document.getElementById('form-funding').value,
                 description: document.getElementById('form-desc').value,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            collabsRef.add(newCollab).then(() => {
-                document.getElementById('collab-form').reset();
-                switchTab('list');
-                flyToRegion(newCollab.lng, newCollab.lat, 7);
-            }).catch(err => {
-                console.error("Firebase save error:", err);
-                alert("Failed to save to Firebase. Please check your Firestore Security Rules.");
-            });
+            if (editId) {
+                collabsRef.doc(editId).update(payload).then(() => {
+                    cancelEditing();
+                    switchTab('list');
+                });
+            } else {
+                collabsRef.add(payload).then(() => {
+                    cancelEditing();
+                    switchTab('list');
+                    flyToRegion(payload.lng, payload.lat, 7);
+                });
+            }
         };
 
-        // --- 6. NAVIGATION & EXPORT ---
+        // --- 8. NAVIGATION & EXPORT ---
         function switchTab(tab) {
-            activeTab = tab;
-            const btnAdd = document.getElementById('tab-add');
-            const btnList = document.getElementById('tab-list');
-            const contentAdd = document.getElementById('content-add');
-            const contentList = document.getElementById('content-list');
-
-            if (tab === 'add') {
-                btnAdd.className = "flex-1 py-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-2 transition";
-                btnList.className = "flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-2 transition";
-                contentAdd.classList.remove('hidden');
-                contentList.classList.add('hidden');
-            } else {
-                btnList.className = "flex-1 py-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-2 transition";
-                btnAdd.className = "flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-2 transition";
-                contentList.classList.remove('hidden');
-                contentAdd.classList.add('hidden');
-            }
+            ['add', 'list', 'stats', 'funding'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const content = document.getElementById(`content-${t}`);
+                if (t === tab) {
+                    btn.className = "flex-1 py-3 border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-1.5 transition font-bold";
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = "flex-1 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-1.5 transition font-medium";
+                    content.classList.add('hidden');
+                }
+            });
         }
 
         document.getElementById('export-btn').onclick = function() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allCollaborations, null, 2));
+            const exportData = {
+                collaborations: allCollaborations,
+                fundingSources: allFundingSources
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `sea_pacific_collaborations_${new Date().toISOString().slice(0,10)}.json`);
+            downloadAnchor.setAttribute("download", `sea_pacific_collaborations_full_${new Date().toISOString().slice(0,10)}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
-        };
-
-        document.getElementById('toggle-sidebar').onclick = function() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('hidden');
         };
     </script>
 </body>
