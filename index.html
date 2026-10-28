@@ -31,8 +31,10 @@
             border: 1px solid #e2e8f0;
             bottom: 12px;
             left: -50px;
-            min-width: 260px;
-            max-width: 320px;
+            min-width: 270px;
+            max-width: 340px;
+            max-height: 400px;
+            overflow-y: auto;
             z-index: 40;
         }
         .ol-popup:after, .ol-popup:before {
@@ -86,7 +88,7 @@
         <div class="flex-1 relative">
             <div id="map"></div>
 
-            <div id="popup" class="ol-popup">
+            <div id="popup" class="ol-popup custom-scrollbar">
                 <a href="#" id="popup-closer" class="ol-popup-closer">&times;</a>
                 <div id="popup-content"></div>
             </div>
@@ -305,9 +307,19 @@
                             <input type="email" id="member-email" placeholder="e.g. quang.bui@ctu.edu.vn" class="w-full border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                         <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Photo / Avatar URL</label>
-                            <input type="url" id="member-photo" placeholder="https://images.unsplash.com/..." class="w-full border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <label class="block font-semibold text-slate-700 mb-1">Upload Photo / Avatar</label>
+                            <label class="flex items-center justify-center border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg p-2 font-medium cursor-pointer transition">
+                                <i data-lucide="image" class="w-3.5 h-3.5 mr-1"></i>
+                                <span>Choose Image File</span>
+                                <input type="file" id="member-photo-file" accept="image/*" class="hidden" onchange="handleMemberPhotoUpload(event)">
+                            </label>
+                            <input type="hidden" id="member-photo-base64" value="">
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Or Photo Image URL</label>
+                        <input type="url" id="member-photo-url" placeholder="https://images.unsplash.com/..." class="w-full border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
 
                     <div>
@@ -447,8 +459,8 @@
         const fundingRef = db.collection("funding_sources");
         const membersRef = db.collection("team_members");
 
-        // --- 2. OPENLAYERS MAP SETUP ---
-        let map, vectorSource, vectorLayer, overlay;
+        // --- 2. OPENLAYERS MAP & CLUSTER SETUP ---
+        let map, vectorSource, clusterSource, vectorLayer, overlay;
         let allCollaborations = [];
         let allFundingSources = [];
         let allTeamMembers = [];
@@ -491,7 +503,50 @@
             };
 
             vectorSource = new ol.source.Vector();
-            vectorLayer = new ol.layer.Vector({ source: vectorSource });
+
+            // Cluster source to group nearby pins when zoomed out
+            clusterSource = new ol.source.Cluster({
+                distance: 45,
+                minDistance: 15,
+                source: vectorSource
+            });
+
+            // Dynamic cluster style generator
+            vectorLayer = new ol.layer.Vector({
+                source: clusterSource,
+                style: function(feature) {
+                    const features = feature.get('features');
+                    const size = features ? features.length : 1;
+
+                    if (size === 1) {
+                        const c = features[0].get('collabData');
+                        const hexColor = (disciplineColors[c.discipline] || { bg: '#6366F1' }).bg;
+                        const statusColor = c.status === 'Running' ? '#10B981' : (c.status === 'Finished' ? '#3B82F6' : '#F59E0B');
+
+                        return new ol.style.Style({
+                            image: new ol.style.Circle({
+                                radius: 6, // Smaller marker size as requested!
+                                fill: new ol.style.Fill({ color: hexColor }),
+                                stroke: new ol.style.Stroke({ color: statusColor, width: 2.5 })
+                            })
+                        });
+                    } else {
+                        // Cluster group marker with project count number inside
+                        return new ol.style.Style({
+                            image: new ol.style.Circle({
+                                radius: Math.min(12 + size * 1.5, 22),
+                                fill: new ol.style.Fill({ color: '#4F46E5' }),
+                                stroke: new ol.style.Stroke({ color: '#ffffff', width: 2.5 })
+                            }),
+                            text: new ol.style.Text({
+                                text: size.toString(),
+                                fill: new ol.style.Fill({ color: '#ffffff' }),
+                                font: 'bold 11px sans-serif'
+                            })
+                        });
+                    }
+                }
+            });
 
             map = new ol.Map({
                 target: 'map',
@@ -504,27 +559,64 @@
                 const feature = map.forEachFeatureAtPixel(evt.pixel, function(ft) { return ft; });
 
                 if (feature) {
-                    const c = feature.get('collabData');
-                    const popupContent = document.getElementById('popup-content');
-                    const badgeStyle = (disciplineColors[c.discipline] || { label: 'bg-slate-100 text-slate-800' }).label;
-                    const statusVal = c.status || 'Running';
-                    const stBadge = (statusBadges[statusVal] || statusBadges['Running']).label;
+                    const features = feature.get('features');
+                    if (!features || features.length === 0) return;
 
-                    popupContent.innerHTML = `
-                        <div class="flex items-center space-x-1.5 mb-1">
-                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-md ${badgeStyle} uppercase">${c.discipline}</span>
-                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-md ${stBadge} uppercase">${statusVal}</span>
-                        </div>
-                        <h4 class="font-bold text-sm text-slate-900 leading-snug mb-1">${c.title}</h4>
-                        <p class="text-xs text-slate-600 mb-1"><strong>Partner:</strong> ${c.partner} (${c.country})</p>
-                        ${c.lead ? `<p class="text-xs text-slate-500 mb-1"><strong>Lead:</strong> ${c.lead}</p>` : ''}
-                        ${c.funding ? `<p class="text-xs text-indigo-700 font-semibold mb-1"><strong>Funding:</strong> ${c.funding}</p>` : ''}
-                        ${c.description ? `<p class="text-xs text-slate-600 mt-1 border-t border-slate-100 pt-1 line-clamp-2 mb-2">${c.description}</p>` : ''}
-                        <div class="flex space-x-2 pt-2 border-t border-slate-100">
-                            <button onclick="editProject('${c.id}')" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-1 rounded text-xs transition">Edit</button>
-                            <button onclick="deleteProject('${c.id}')" class="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold py-1 rounded text-xs transition">Delete</button>
-                        </div>
-                    `;
+                    const popupContent = document.getElementById('popup-content');
+
+                    if (features.length === 1) {
+                        // Single project popup
+                        const c = features[0].get('collabData');
+                        const badgeStyle = (disciplineColors[c.discipline] || { label: 'bg-slate-100 text-slate-800' }).label;
+                        const statusVal = c.status || 'Running';
+                        const stBadge = (statusBadges[statusVal] || statusBadges['Running']).label;
+
+                        popupContent.innerHTML = `
+                            <div class="flex items-center space-x-1.5 mb-1">
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-md ${badgeStyle} uppercase">${c.discipline}</span>
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-md ${stBadge} uppercase">${statusVal}</span>
+                            </div>
+                            <h4 class="font-bold text-sm text-slate-900 leading-snug mb-1">${c.title}</h4>
+                            <p class="text-xs text-slate-600 mb-1"><strong>Partner:</strong> ${c.partner} (${c.country})</p>
+                            ${c.lead ? `<p class="text-xs text-slate-500 mb-1"><strong>Lead:</strong> ${c.lead}</p>` : ''}
+                            ${c.funding ? `<p class="text-xs text-indigo-700 font-semibold mb-1"><strong>Funding:</strong> ${c.funding}</p>` : ''}
+                            ${c.description ? `<p class="text-xs text-slate-600 mt-1 border-t border-slate-100 pt-1 line-clamp-2 mb-2">${c.description}</p>` : ''}
+                            <div class="flex space-x-2 pt-2 border-t border-slate-100">
+                                <button onclick="editProject('${c.id}')" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-1 rounded text-xs transition">Edit</button>
+                                <button onclick="deleteProject('${c.id}')" class="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold py-1 rounded text-xs transition">Delete</button>
+                            </div>
+                        `;
+                    } else {
+                        // Multi-project group cluster popup
+                        let listHtml = `<div class="font-bold text-xs text-indigo-900 border-b pb-1.5 mb-2 flex items-center justify-between">
+                                            <span>Group Projects (${features.length})</span>
+                                            <span class="text-[10px] text-indigo-600 font-normal">Click project to edit</span>
+                                        </div>
+                                        <div class="space-y-2 max-h-56 overflow-y-auto pr-1">`;
+                        
+                        features.forEach(f => {
+                            const c = f.get('collabData');
+                            const badgeStyle = (disciplineColors[c.discipline] || { label: 'bg-slate-100 text-slate-800' }).label;
+                            const statusVal = c.status || 'Running';
+                            const stBadge = (statusBadges[statusVal] || statusBadges['Running']).label;
+
+                            listHtml += `
+                                <div class="p-2 border rounded-lg bg-slate-50 hover:bg-indigo-50/50 transition">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${badgeStyle}">${c.discipline}</span>
+                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${stBadge}">${statusVal}</span>
+                                    </div>
+                                    <h5 class="font-bold text-xs text-slate-800 leading-tight">${c.title}</h5>
+                                    <p class="text-[10px] text-slate-500">${c.partner} (${c.country})</p>
+                                    <div class="flex justify-end space-x-2 mt-1">
+                                        <button onclick="editProject('${c.id}')" class="text-[10px] text-amber-600 font-bold hover:underline">Edit</button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        listHtml += `</div>`;
+                        popupContent.innerHTML = listHtml;
+                    }
                     overlay.setPosition(evt.coordinate);
                 } else {
                     overlay.setPosition(undefined);
@@ -636,17 +728,6 @@
             select.value = currentVal;
         }
 
-        function createFeatureStyle(discipline, status) {
-            const hexColor = (disciplineColors[discipline] || { bg: '#6366F1' }).bg;
-            return new ol.style.Style({
-                image: new ol.style.Circle({
-                    radius: status === 'Proposal' ? 7 : 10,
-                    fill: new ol.style.Fill({ color: hexColor }),
-                    stroke: new ol.style.Stroke({ color: status === 'Running' ? '#10B981' : (status === 'Finished' ? '#3B82F6' : '#F59E0B'), width: 3.5 })
-                })
-            });
-        }
-
         function applyFilters() {
             const search = document.getElementById('filter-search').value.toLowerCase();
             const discFilter = document.getElementById('filter-discipline').value;
@@ -676,7 +757,6 @@
                     geometry: new ol.geom.Point(ol.proj.fromLonLat([c.lng, c.lat])),
                     collabData: c
                 });
-                feature.setStyle(createFeatureStyle(c.discipline, c.status));
                 vectorSource.addFeature(feature);
             });
         }
@@ -759,6 +839,17 @@
             lucide.createIcons();
         }
 
+        function handleMemberPhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('member-photo-base64').value = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
         function toggleMemberForm(memberObj = null) {
             const form = document.getElementById('member-form');
             form.classList.toggle('hidden');
@@ -768,12 +859,14 @@
                 document.getElementById('member-name').value = memberObj.name || '';
                 document.getElementById('member-institution').value = memberObj.institution || '';
                 document.getElementById('member-email').value = memberObj.email || '';
-                document.getElementById('member-photo').value = memberObj.photo || '';
+                document.getElementById('member-photo-url').value = memberObj.photo && memberObj.photo.startsWith('http') ? memberObj.photo : '';
+                document.getElementById('member-photo-base64').value = memberObj.photo && memberObj.photo.startsWith('data:') ? memberObj.photo : '';
                 document.getElementById('member-bio').value = memberObj.bio || '';
                 document.getElementById('member-form-title').textContent = "Edit Team Member Profile";
             } else {
                 document.getElementById('member-form').reset();
                 document.getElementById('member-editing-id').value = '';
+                document.getElementById('member-photo-base64').value = '';
                 document.getElementById('member-form-title').textContent = "Add New Team Member";
             }
         }
@@ -781,11 +874,14 @@
         document.getElementById('member-form').onsubmit = function(e) {
             e.preventDefault();
             const editId = document.getElementById('member-editing-id').value;
+            const photoBase64 = document.getElementById('member-photo-base64').value;
+            const photoUrl = document.getElementById('member-photo-url').value;
+
             const data = {
                 name: document.getElementById('member-name').value,
                 institution: document.getElementById('member-institution').value,
                 email: document.getElementById('member-email').value,
-                photo: document.getElementById('member-photo').value,
+                photo: photoBase64 || photoUrl || '',
                 bio: document.getElementById('member-bio').value
             };
 
@@ -1046,7 +1142,7 @@
             downloadAnchor.click();
             downloadAnchor.remove();
         };
-    
+
         // --- 10. CUSTOM USER QR CODE UPLOADER ---
         function uploadCustomQRCode(event) {
             const file = event.target.files[0];
@@ -1069,7 +1165,6 @@
                 if (imgEl) imgEl.src = savedQr;
             }
         });
-
     </script>
 </body>
 </html>
