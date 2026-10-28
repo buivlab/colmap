@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SE Asia & Pacific Research Collaboration Map</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <style>
+        #map { height: calc(100vh - 4rem); z-index: 10; }
+        .custom-marker { transition: transform 0.2s ease; }
+        .custom-marker:hover { transform: scale(1.2); }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-900 font-sans antialiased text-slate-800 overflow-hidden">
+    <!-- Top Header -->
+    <header class="h-16 bg-slate-950 text-white px-6 flex items-center justify-between shadow-lg border-b border-slate-800 z-30 relative">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-indigo-600 rounded-lg text-white">
+                <i data-lucide="globe-2" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight text-slate-100">SE Asia & Pacific Collaboration Hub</h1>
+                <p class="text-xs text-slate-400">Interactive Science, Engineering & IT Project Map</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <div id="sync-status" class="flex items-center space-x-2 text-xs text-amber-400 bg-amber-950/50 border border-amber-800/50 px-3 py-1.5 rounded-full">
+                <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                <span>Connecting...</span>
+            </div>
+            <button id="export-btn" class="flex items-center space-x-1.5 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3 py-1.5 rounded-lg transition font-medium">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Export JSON</span>
+            </button>
+            <button id="toggle-sidebar" class="md:hidden p-2 text-slate-300 hover:text-white bg-slate-800 rounded-lg">
+                <i data-lucide="panel-right" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex h-[calc(100vh-4rem)] relative">
+        <!-- Main Map Area -->
+        <div class="flex-1 relative">
+            <div id="map"></div>
+
+            <!-- Regional Quick-Fly Controls -->
+            <div class="absolute bottom-6 left-6 z-20 flex flex-wrap gap-2 glass-panel p-2 rounded-xl shadow-xl border border-slate-200/50 max-w-xl">
+                <span class="text-xs font-semibold text-slate-500 uppercase px-2 py-1 flex items-center">
+                    <i data-lucide="compass" class="w-3.5 h-3.5 mr-1"></i> Quick View:
+                </span>
+                <button onclick="flyToRegion(-2.5, 118.0, 5)" class="text-xs font-medium px-2.5 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-lg border border-slate-200 transition">Indonesia</button>
+                <button onclick="flyToRegion(14.0, 108.0, 5)" class="text-xs font-medium px-2.5 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-lg border border-slate-200 transition">Vietnam</button>
+                <button onclick="flyToRegion(-6.3, 143.9, 6)" class="text-xs font-medium px-2.5 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-lg border border-slate-200 transition">PNG</button>
+                <button onclick="flyToRegion(-17.7, 178.0, 6)" class="text-xs font-medium px-2.5 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-lg border border-slate-200 transition">Fiji / Pacific</button>
+                <button onclick="flyToRegion(12.8, 121.7, 5)" class="text-xs font-medium px-2.5 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 rounded-lg border border-slate-200 transition">Philippines</button>
+                <button onclick="flyToRegion(0.0, 120.0, 4)" class="text-xs font-medium px-2.5 py-1 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition">Reset View</button>
+            </div>
+        </div>
+
+        <!-- Sidebar / Control Panel -->
+        <div id="sidebar" class="w-full md:w-[480px] bg-white border-l border-slate-200 flex flex-col h-full z-20 shadow-2xl transition-all duration-300 absolute right-0 md:relative">
+            <!-- Sidebar Navigation Tabs -->
+            <div class="flex border-b border-slate-200 bg-slate-50">
+                <button id="tab-add" onclick="switchTab('add')" class="flex-1 py-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-2 transition">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Add Project</span>
+                </button>
+                <button id="tab-list" onclick="switchTab('list')" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-2 transition">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                    <span>Collaborations (<span id="count-badge">0</span>)</span>
+                </button>
+            </div>
+
+            <!-- Tab Content: Add Project Form -->
+            <div id="content-add" class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-4">
+                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-900 flex items-start space-x-2.5">
+                    <i data-lucide="map-pin" class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5"></i>
+                    <span><strong>Tip:</strong> Click anywhere on the map to autofill latitude & longitude, or enter details manually below.</span>
+                </div>
+
+                <form id="collab-form" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Project Title *</label>
+                        <input type="text" id="form-title" required placeholder="e.g. Mangrove Climate Sensors & Flood Early Warning" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Discipline *</label>
+                            <select id="form-discipline" required class="w-full border border-slate-300 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                <option value="Science">Science (Biology/Ecology)</option>
+                                <option value="Engineering">Engineering & Tech</option>
+                                <option value="IT">IT, AI & Data Science</option>
+                                <option value="Cross-Disciplinary">Cross-Disciplinary</option>
+                                <option value="Teaching & Mobility">Teaching & Mobility</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Target Country *</label>
+                            <input type="text" id="form-country" required placeholder="e.g. Vietnam, Fiji, Indonesia" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Partner Institution *</label>
+                            <input type="text" id="form-partner" required placeholder="e.g. Vietnam National Univ" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Lead Researcher / Facilitator</label>
+                            <input type="text" id="form-lead" placeholder="e.g. Dr. A. Smith" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Latitude *</label>
+                            <input type="number" step="any" id="form-lat" required placeholder="e.g. 10.762" class="w-full border border-slate-300 rounded-lg p-2.5 font-mono text-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Longitude *</label>
+                            <input type="number" step="any" id="form-lng" required placeholder="e.g. 106.660" class="w-full border border-slate-300 rounded-lg p-2.5 font-mono text-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Funding / Partner Mechanism</label>
+                        <input type="text" id="form-funding" placeholder="e.g. DFAT Aus4Innovation, ACIAR, Internal Seed" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Project Summary / Collaboration Scope</label>
+                        <textarea id="form-desc" rows="3" placeholder="Briefly describe joint goals, methodology, student involvement..." class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md transition flex items-center justify-center space-x-2 text-sm">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        <span>Publish Collaboration to Live Map</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Tab Content: Collaboration List & Filters -->
+            <div id="content-list" class="flex-1 overflow-y-auto p-4 custom-scrollbar hidden flex flex-col space-y-3">
+                <!-- Search & Filters -->
+                <div class="space-y-2 pb-2 border-b border-slate-200">
+                    <div class="relative">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                        <input type="text" id="filter-search" oninput="applyFilters()" placeholder="Search title, institution, lead..." class="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <select id="filter-discipline" onchange="applyFilters()" class="border border-slate-300 rounded-lg p-2 bg-white">
+                            <option value="ALL">All Disciplines</option>
+                            <option value="Science">Science</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="IT">IT & AI</option>
+                            <option value="Cross-Disciplinary">Cross-Disciplinary</option>
+                            <option value="Teaching & Mobility">Teaching & Mobility</option>
+                        </select>
+                        <select id="filter-country" onchange="applyFilters()" class="border border-slate-300 rounded-lg p-2 bg-white">
+                            <option value="ALL">All Countries</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Live Project Cards List -->
+                <div id="project-cards-container" class="space-y-2.5 overflow-y-auto flex-1 custom-scrollbar">
+                    <!-- Cards rendered dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. FIREBASE CONFIG & INITIALIZATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDummyKeyForStandaloneTemplateOnly",
+            authDomain: "sea-pacific-collab.firebaseapp.com",
+            projectId: "sea-pacific-collab",
+            storageBucket: "sea-pacific-collab.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef123456"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Dedicated public collection path
+        const COLLABS_REF = db.collection('artifacts').doc('sea-pacific-collab-app').collection('public').doc('data').collection('collaborations');
+
+        // --- 2. GLOBAL STATE & MAP SETUP ---
+        let map;
+        let markersGroup;
+        let allCollaborations = [];
+        let activeTab = 'add';
+
+        const disciplineColors = {
+            'Science': { bg: '#10B981', label: 'bg-emerald-100 text-emerald-800' },
+            'Engineering': { bg: '#3B82F6', label: 'bg-blue-100 text-blue-800' },
+            'IT': { bg: '#8B5CF6', label: 'bg-purple-100 text-purple-800' },
+            'Cross-Disciplinary': { bg: '#F59E0B', label: 'bg-amber-100 text-amber-800' },
+            'Teaching & Mobility': { bg: '#14B8A6', label: 'bg-teal-100 text-teal-800' }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initMap();
+            listenToRealtimeData();
+            setupMapClickHandler();
+        });
+
+        function initMap() {
+            // Center over Southeast Asia & Pacific Region
+            map = L.map('map', { zoomControl: false }).setView([2.0, 118.0], 4);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+
+            L.control.zoom({ position: 'topleft' }).addTo(map);
+            markersGroup = L.layerGroup().addTo(map);
+        }
+
+        function flyToRegion(lat, lng, zoom) {
+            map.flyTo([lat, lng], zoom, { duration: 1.5 });
+        }
+
+        // --- 3. MAP CLICK HANDLER (AUTOFILL LAT/LNG) ---
+        function setupMapClickHandler() {
+            map.on('click', (e) => {
+                const { lat, lng } = e.latlng;
+                document.getElementById('form-lat').value = lat.toFixed(5);
+                document.getElementById('form-lng').value = lng.toFixed(5);
+                switchTab('add');
+            });
+        }
+
+        // --- 4. REALTIME FIREBASE SYNC & SEED DATA FALLBACK ---
+        function listenToRealtimeData() {
+            const statusEl = document.getElementById('sync-status');
+            
+            COLLABS_REF.onSnapshot((snapshot) => {
+                statusEl.className = "flex items-center space-x-2 text-xs text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 px-3 py-1.5 rounded-full";
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Live Multi-User Connected</span>`;
+
+                if (snapshot.empty) {
+                    seedDefaultCollaborations();
+                } else {
+                    allCollaborations = [];
+                    snapshot.forEach(doc => {
+                        allCollaborations.push({ id: doc.id, ...doc.data() });
+                    });
+                    updateUI();
+                }
+            }, (error) => {
+                console.warn("Firebase snapshot error. Operating in offline/local fallback:", error);
+                statusEl.className = "flex items-center space-x-2 text-xs text-amber-400 bg-amber-950/50 border border-amber-800/50 px-3 py-1.5 rounded-full";
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Local Session Active</span>`;
+                if(allCollaborations.length === 0) seedLocalDefaults();
+            });
+        }
+
+        function seedDefaultCollaborations() {
+            const defaults = [
+                {
+                    title: "Drone-Based Flood & Environmental Monitoring",
+                    discipline: "Cross-Disciplinary",
+                    country: "Vietnam",
+                    partner: "Can Tho University",
+                    lead: "Prof. Quang Bui (Facilitator)",
+                    lat: 10.030,
+                    lng: 105.770,
+                    funding: "DFAT Aus4Innovation Grant",
+                    description: "Integrating Autonomous Drones, Science hydrological models, and IT IoT sensor networks for Mekong Delta resilience."
+                },
+                {
+                    title: "Pacific Smart Microgrid & Off-Grid Energy",
+                    discipline: "Engineering",
+                    country: "Fiji",
+                    partner: "University of the South Pacific (USP)",
+                    lead: "Dr. K. Sharma",
+                    lat: -18.148,
+                    lng: 178.444,
+                    funding: "DFAT Pacific Energy Partnership",
+                    description: "Engineering robust microgrid systems paired with IoT sensor diagnostics for remote island communities."
+                },
+                {
+                    title: "Coral Reef Health AI & Coral Bleaching Models",
+                    discipline: "Science",
+                    country: "Indonesia",
+                    partner: "BRIN / IPB University",
+                    lead: "Dr. Maya Wijaya",
+                    lat: -6.597,
+                    lng: 106.806,
+                    funding: "KONEKSI Collaborative Grant",
+                    description: "Combining marine science field sampling with deep learning computer vision to quantify reef restoration."
+                }
+            ];
+
+            defaults.forEach(item => COLLABS_REF.add(item));
+        }
+
+        function seedLocalDefaults() {
+            allCollaborations = [
+                {
+                    id: 'local-1',
+                    title: "Drone-Based Flood & Environmental Monitoring",
+                    discipline: "Cross-Disciplinary",
+                    country: "Vietnam",
+                    partner: "Can Tho University",
+                    lead: "Prof. Quang Bui (Facilitator)",
+                    lat: 10.030,
+                    lng: 105.770,
+                    funding: "DFAT Aus4Innovation Grant",
+                    description: "Integrating Autonomous Drones, Science hydrological models, and IT IoT sensor networks for Mekong Delta resilience."
+                }
+            ];
+            updateUI();
+        }
+
+        // --- 5. RENDER MAP MARKERS & SIDEBAR CARDS ---
+        function updateUI() {
+            document.getElementById('count-badge').textContent = allCollaborations.length;
+            populateCountryFilter();
+            applyFilters();
+        }
+
+        function populateCountryFilter() {
+            const select = document.getElementById('filter-country');
+            const currentVal = select.value;
+            const countries = [...new Set(allCollaborations.map(c => c.country).filter(Boolean))].sort();
+
+            select.innerHTML = '<option value="ALL">All Countries</option>';
+            countries.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        }
+
+        function createCustomIcon(discipline) {
+            const color = (disciplineColors[discipline] || { bg: '#6366F1' }).bg;
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `
+                    <div style="background-color: ${color}; width: 26px; height: 26px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                    </div>
+                `,
+                iconSize: [26, 26],
+                iconAnchor: [13, 13]
+            });
+        }
+
+        function applyFilters() {
+            const search = document.getElementById('filter-search').value.toLowerCase();
+            const discFilter = document.getElementById('filter-discipline').value;
+            const countryFilter = document.getElementById('filter-country').value;
+
+            const filtered = allCollaborations.filter(c => {
+                const matchesSearch = (c.title || '').toLowerCase().includes(search) ||
+                                      (c.partner || '').toLowerCase().includes(search) ||
+                                      (c.lead || '').toLowerCase().includes(search) ||
+                                      (c.description || '').toLowerCase().includes(search);
+                const matchesDisc = discFilter === 'ALL' || c.discipline === discFilter;
+                const matchesCountry = countryFilter === 'ALL' || c.country === countryFilter;
+                return matchesSearch && matchesDisc && matchesCountry;
+            });
+
+            renderMapMarkers(filtered);
+            renderProjectCards(filtered);
+        }
+
+        function renderMapMarkers(items) {
+            markersGroup.clearLayers();
+            items.forEach(c => {
+                if (!c.lat || !c.lng) return;
+                const marker = L.marker([c.lat, c.lng], { icon: createCustomIcon(c.discipline) });
+
+                const badgeStyle = (disciplineColors[c.discipline] || { label: 'bg-slate-100 text-slate-800' }).label;
+
+                const popupHtml = `
+                    <div class="p-1 max-w-xs font-sans">
+                        <span class="inline-block px-2 py-0.5 text-[10px] font-bold rounded-md ${badgeStyle} uppercase mb-1">${c.discipline}</span>
+                        <h4 class="font-bold text-sm text-slate-900 leading-snug mb-1">${c.title}</h4>
+                        <p class="text-xs text-slate-600 mb-1"><strong>Partner:</strong> ${c.partner} (${c.country})</p>
+                        ${c.lead ? `<p class="text-xs text-slate-500 mb-1"><strong>Lead:</strong> ${c.lead}</p>` : ''}
+                        ${c.funding ? `<p class="text-xs text-indigo-700 font-semibold mb-1 font-mono"><strong>Funding:</strong> ${c.funding}</p>` : ''}
+                        ${c.description ? `<p class="text-xs text-slate-600 mt-1 border-t border-slate-100 pt-1 line-clamp-3">${c.description}</p>` : ''}
+                    </div>
+                `;
+
+                marker.bindPopup(popupHtml);
+                markersGroup.addLayer(marker);
+            });
+        }
+
+        function renderProjectCards(items) {
+            const container = document.getElementById('project-cards-container');
+            container.innerHTML = '';
+
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <i data-lucide="folder-open" class="w-8 h-8 mx-auto mb-2 stroke-1"></i>
+                        <p class="text-xs">No collaborations match your filter.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            items.forEach(c => {
+                const badgeStyle = (disciplineColors[c.discipline] || { label: 'bg-slate-100 text-slate-800' }).label;
+                const card = document.createElement('div');
+                card.className = "p-3 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md transition cursor-pointer space-y-1.5";
+                
+                card.onclick = () => {
+                    map.flyTo([c.lat, c.lng], 8, { duration: 1 });
+                };
+
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded ${badgeStyle} uppercase">${c.discipline}</span>
+                        <span class="text-[11px] font-semibold text-slate-500">${c.country}</span>
+                    </div>
+                    <h4 class="font-bold text-xs text-slate-800 leading-snug">${c.title}</h4>
+                    <p class="text-[11px] text-slate-600"><strong>Partner:</strong> ${c.partner}</p>
+                    ${c.lead ? `<p class="text-[11px] text-slate-500"><strong>Lead:</strong> ${c.lead}</p>` : ''}
+                    ${c.funding ? `<p class="text-[10px] text-indigo-700 font-medium">💰 ${c.funding}</p>` : ''}
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        // --- 6. SUBMIT NEW FORM DATA TO FIREBASE ---
+        document.getElementById('collab-form').onsubmit = function(e) {
+            e.preventDefault();
+
+            const newCollab = {
+                title: document.getElementById('form-title').value,
+                discipline: document.getElementById('form-discipline').value,
+                country: document.getElementById('form-country').value,
+                partner: document.getElementById('form-partner').value,
+                lead: document.getElementById('form-lead').value,
+                lat: parseFloat(document.getElementById('form-lat').value),
+                lng: parseFloat(document.getElementById('form-lng').value),
+                funding: document.getElementById('form-funding').value,
+                description: document.getElementById('form-desc').value,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            COLLABS_REF.add(newCollab).then(() => {
+                document.getElementById('collab-form').reset();
+                switchTab('list');
+                map.flyTo([newCollab.lat, newCollab.lng], 7, { duration: 1.2 });
+            }).catch(err => {
+                console.warn("Firestore save fallback to local state:", err);
+                allCollaborations.unshift({ id: 'local-' + Date.now(), ...newCollab });
+                updateUI();
+                document.getElementById('collab-form').reset();
+                switchTab('list');
+            });
+        };
+
+        // --- 7. TAB & SIDEBAR NAVIGATION ---
+        function switchTab(tab) {
+            activeTab = tab;
+            const btnAdd = document.getElementById('tab-add');
+            const btnList = document.getElementById('tab-list');
+            const contentAdd = document.getElementById('content-add');
+            const contentList = document.getElementById('content-list');
+
+            if (tab === 'add') {
+                btnAdd.className = "flex-1 py-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-2 transition";
+                btnList.className = "flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-2 transition";
+                contentAdd.classList.remove('hidden');
+                contentList.classList.add('hidden');
+            } else {
+                btnList.className = "flex-1 py-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center space-x-2 transition";
+                btnAdd.className = "flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center justify-center space-x-2 transition";
+                contentList.classList.remove('hidden');
+                contentAdd.classList.add('hidden');
+            }
+        }
+
+        // --- 8. EXPORT DATA JSON ---
+        document.getElementById('export-btn').onclick = function() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allCollaborations, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `sea_pacific_collaborations_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        };
+
+        // Mobile Sidebar Toggle
+        document.getElementById('toggle-sidebar').onclick = function() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+        };
+    </script>
+</body>
+</html>
