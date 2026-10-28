@@ -11,8 +11,9 @@
     <script src="https://cdn.jsdelivr.net/npm/ol@v8.2.0/dist/ol.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- PeerJS for direct browser-to-browser real-time sync -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- Firebase SDKs (v10.8.0 Compatibility Mode) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
         #map { height: calc(100vh - 4rem); width: 100%; z-index: 10; }
         .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); }
@@ -84,14 +85,10 @@
         </div>
 
         <div class="flex items-center space-x-3">
-            <!-- PeerJS Room / Sync Status -->
-            <div id="peer-status" class="hidden sm:flex items-center space-x-2 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg text-xs">
-                <span id="sync-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                <span class="text-slate-400">Room:</span>
-                <span id="room-code-display" class="font-mono font-bold text-indigo-400 select-all">Connecting...</span>
-                <button onclick="copyJoinLink()" title="Copy Link" class="text-slate-400 hover:text-white ml-1">
-                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                </button>
+            <!-- Firebase Connection Status Badge -->
+            <div id="firebase-status" class="flex items-center space-x-2 text-xs text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 px-3 py-1.5 rounded-full">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Connecting to Firebase...</span>
             </div>
 
             <button id="export-btn" class="flex items-center space-x-1.5 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3.5 py-2 rounded-lg transition font-medium">
@@ -238,20 +235,29 @@
     </div>
 
     <script>
-        // --- 1. OPENLAYERS MAP SETUP ---
+        // --- 1. USER'S FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCyM4_LwKyAoivwJTPeel0NNYCZHCp6Hgo",
+            authDomain: "colmap-a6915.firebaseapp.com",
+            projectId: "colmap-a6915",
+            storageBucket: "colmap-a6915.firebasestorage.app",
+            messagingSenderId: "992765884317",
+            appId: "1:992765884317:web:97602129c35e91e5b3a174",
+            measurementId: "G-6W6YQDTJBF"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const collabsRef = db.collection("collaborations");
+
+        // --- 2. OPENLAYERS MAP SETUP ---
         let map;
         let vectorSource;
         let vectorLayer;
         let overlay;
         let allCollaborations = [];
         let activeTab = 'add';
-
-        // PeerJS P2P Sync variables
-        let peer;
-        let myId = null;
-        let connections = [];
-        let hostPeerId = null;
-        let isHost = false;
 
         const disciplineColors = {
             'Science': { bg: '#10B981', label: 'bg-emerald-100 text-emerald-800' },
@@ -264,7 +270,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             initOpenLayersMap();
-            initPeerJS();
+            listenToFirestore();
         });
 
         function initOpenLayersMap() {
@@ -337,120 +343,34 @@
             });
         }
 
-        // --- 2. PEERJS REAL-TIME P2P SYNC ---
-        function initPeerJS() {
-            const urlParams = new URLSearchParams(window.location.search);
-            hostPeerId = urlParams.get('room');
+        // --- 3. FIREBASE REALTIME LISTENER ---
+        function listenToFirestore() {
+            const statusEl = document.getElementById('firebase-status');
 
-            // Generate or use room ID
-            peer = new Peer();
+            collabsRef.onSnapshot((snapshot) => {
+                statusEl.className = "flex items-center space-x-2 text-xs text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 px-3 py-1.5 rounded-full";
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Firebase Realtime Connected</span>`;
 
-            peer.on('open', (id) => {
-                myId = id;
-                if (!hostPeerId) {
-                    // I am the host
-                    isHost = true;
-                    document.getElementById('room-code-display').textContent = id;
-                    loadLocalStorageData(); // Load local or seed defaults for host
+                if (snapshot.empty) {
+                    seedInitialDataToFirebase();
                 } else {
-                    // I am a guest joining a room
-                    isHost = false;
-                    document.getElementById('room-code-display').textContent = hostPeerId;
-                    connectToHost(hostPeerId);
-                }
-            });
-
-            peer.on('connection', (conn) => {
-                // As host, accept incoming connection from guest
-                setupConnection(conn);
-                if (isHost) {
-                    // Send current state to newly connected guest
-                    setTimeout(() => {
-                        conn.send({ type: 'SYNC_STATE', data: allCollaborations });
-                    }, 500);
-                }
-            });
-        }
-
-        function connectToHost(hostId) {
-            const conn = peer.connect(hostId);
-            setupConnection(conn);
-        }
-
-        function setupConnection(conn) {
-            connections.push(conn);
-            updateSyncStatus('connected');
-
-            conn.on('data', (packet) => {
-                if (packet.type === 'SYNC_STATE') {
-                    allCollaborations = packet.data;
+                    allCollaborations = [];
+                    snapshot.forEach((doc) => {
+                        allCollaborations.push({ id: doc.id, ...doc.data() });
+                    });
                     updateUI();
-                } else if (packet.type === 'ADD_PROJECT') {
-                    allCollaborations.unshift(packet.data);
-                    saveLocalStorageData(false); // save without broadcasting loop
-                    updateUI();
-                    // If host, relay to all other peers
-                    if (isHost) {
-                        broadcast({ type: 'ADD_PROJECT', data: packet.data }, conn.peer);
-                    }
                 }
-            });
-
-            conn.on('close', () => {
-                connections = connections.filter(c => c !== conn);
-                if (connections.length === 0) updateSyncStatus('disconnected');
-            });
-        }
-
-        function broadcast(packet, excludePeerId = null) {
-            connections.forEach(conn => {
-                if (conn.peer !== excludePeerId) {
-                    conn.send(packet);
-                }
+            }, (error) => {
+                console.warn("Firestore error or offline fallback:", error);
+                statusEl.className = "flex items-center space-x-2 text-xs text-amber-400 bg-amber-950/50 border border-amber-800/50 px-3 py-1.5 rounded-full";
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Firebase Offline Mode</span>`;
+                if (allCollaborations.length === 0) loadLocalStorageData();
             });
         }
 
-        function updateSyncStatus(status) {
-            const dot = document.getElementById('sync-dot');
-            if (status === 'connected') {
-                dot.className = "w-2 h-2 rounded-full bg-emerald-400";
-            } else {
-                dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-            }
-        }
-
-        function copyJoinLink() {
-            const roomId = isHost ? myId : hostPeerId;
-            const joinUrl = window.location.origin + window.location.pathname + '?room=' + roomId;
-            navigator.clipboard.writeText(joinUrl).then(() => {
-                alert("Room join link copied to clipboard! Share it with your participants.");
-            });
-        }
-
-        // --- 3. DATA PERSISTENCE & SEEDING ---
-        function loadLocalStorageData() {
-            const saved = localStorage.getItem('sea_pacific_collaborations_peer');
-            if (saved) {
-                try {
-                    allCollaborations = JSON.parse(saved);
-                } catch(e) {
-                    seedDefaultCollaborations();
-                }
-            } else {
-                seedDefaultCollaborations();
-            }
-            updateUI();
-        }
-
-        function saveLocalStorageData(shouldBroadcast = true) {
-            localStorage.setItem('sea_pacific_collaborations_peer', JSON.stringify(allCollaborations));
-            updateUI();
-        }
-
-        function seedDefaultCollaborations() {
-            allCollaborations = [
+        function seedInitialDataToFirebase() {
+            const initialProjects = [
                 {
-                    id: 'seed-1',
                     title: "Drone-Based Flood & Environmental Monitoring",
                     discipline: "Cross-Disciplinary",
                     country: "Vietnam",
@@ -462,7 +382,6 @@
                     description: "Integrating Autonomous Drones, Science hydrological models, and IT IoT sensor networks for Mekong Delta resilience."
                 },
                 {
-                    id: 'seed-2',
                     title: "Pacific Smart Microgrid & Off-Grid Energy",
                     discipline: "Engineering",
                     country: "Fiji",
@@ -474,7 +393,6 @@
                     description: "Engineering robust microgrid systems paired with IoT sensor diagnostics for remote island communities."
                 },
                 {
-                    id: 'seed-3',
                     title: "Coral Reef Health AI & Coral Bleaching Models",
                     discipline: "Science",
                     country: "Indonesia",
@@ -486,7 +404,16 @@
                     description: "Combining marine science field sampling with deep learning computer vision to quantify reef restoration."
                 }
             ];
-            saveLocalStorageData(false);
+
+            initialProjects.forEach(item => collabsRef.add(item));
+        }
+
+        function loadLocalStorageData() {
+            const saved = localStorage.getItem('sea_pacific_collaborations_fb');
+            if (saved) {
+                try { allCollaborations = JSON.parse(saved); } catch(e) {}
+            }
+            updateUI();
         }
 
         // --- 4. RENDER OPENLAYERS MARKERS & CARDS ---
@@ -595,12 +522,11 @@
             lucide.createIcons();
         }
 
-        // --- 5. FORM SUBMISSION & P2P BROADCAST ---
+        // --- 5. FORM SUBMISSION TO FIREBASE ---
         document.getElementById('collab-form').onsubmit = function(e) {
             e.preventDefault();
 
             const newCollab = {
-                id: 'proj-' + Date.now(),
                 title: document.getElementById('form-title').value,
                 discipline: document.getElementById('form-discipline').value,
                 country: document.getElementById('form-country').value,
@@ -609,18 +535,18 @@
                 lat: parseFloat(document.getElementById('form-lat').value),
                 lng: parseFloat(document.getElementById('form-lng').value),
                 funding: document.getElementById('form-funding').value,
-                description: document.getElementById('form-desc').value
+                description: document.getElementById('form-desc').value,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            allCollaborations.unshift(newCollab);
-            saveLocalStorageData(false);
-
-            // Broadcast to connected peers
-            broadcast({ type: 'ADD_PROJECT', data: newCollab });
-
-            document.getElementById('collab-form').reset();
-            switchTab('list');
-            flyToRegion(newCollab.lng, newCollab.lat, 7);
+            collabsRef.add(newCollab).then(() => {
+                document.getElementById('collab-form').reset();
+                switchTab('list');
+                flyToRegion(newCollab.lng, newCollab.lat, 7);
+            }).catch(err => {
+                console.error("Firebase save error:", err);
+                alert("Failed to save to Firebase. Please check your Firestore Security Rules.");
+            });
         };
 
         // --- 6. NAVIGATION & EXPORT ---
